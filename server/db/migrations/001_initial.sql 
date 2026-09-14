@@ -1,0 +1,22 @@
+CREATE TABLE devices (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    room TEXT
+);
+
+CREATE TABLE measurements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    device_id TEXT NOT NULL,
+
+    temperature REAL,
+    humidity REAL,
+    battery_voltage REAL,
+
+    FOREIGN KEY (device_id)
+        REFERENCES devices(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_measurements_device_timestamp
+ON measurements(device_id, timestamp);
