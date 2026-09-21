@@ -11,6 +11,10 @@ coverage/
 .env.*
 !.env.example
 
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
 # PlatformIO
 .pio/
 
