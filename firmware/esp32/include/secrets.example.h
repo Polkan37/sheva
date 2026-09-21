@@ -1,0 +1,6 @@
+#pragma once
+
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+#define API_BASE_URL "http://YOUR_SERVER_IP:3000"
