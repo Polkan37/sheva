@@ -1,4 +1,5 @@
 import {
+  type AnySQLiteColumn,
   check,
   index,
   integer,
@@ -17,6 +18,32 @@ export const rooms = sqliteTable(
 
     name: text('name').notNull(),
 
+    slug: text('slug').notNull(),
+
+    displayOrder: integer('display_order')
+      .notNull()
+      .default(0),
+
+    temperatureDeviceId: text(
+      'temperature_device_id',
+    ).references(
+      (): AnySQLiteColumn => devices.id,
+      {
+        onDelete: 'set null',
+        onUpdate: 'cascade',
+      },
+    ),
+
+    humidityDeviceId: text(
+      'humidity_device_id',
+    ).references(
+      (): AnySQLiteColumn => devices.id,
+      {
+        onDelete: 'set null',
+        onUpdate: 'cascade',
+      },
+    ),
+
     createdAt: integer('created_at', {
       mode: 'timestamp_ms',
     }).notNull(),
@@ -26,7 +53,29 @@ export const rooms = sqliteTable(
     }).notNull(),
   },
   (table) => [
-    uniqueIndex('rooms_name_uq').on(table.name),
+    uniqueIndex('rooms_name_uq').on(
+      table.name,
+    ),
+
+    uniqueIndex('rooms_slug_uq').on(
+      table.slug,
+    ),
+
+    index('rooms_display_order_idx').on(
+      table.displayOrder,
+    ),
+
+    index(
+      'rooms_temperature_device_idx',
+    ).on(
+      table.temperatureDeviceId,
+    ),
+
+    index(
+      'rooms_humidity_device_idx',
+    ).on(
+      table.humidityDeviceId,
+    ),
   ],
 );
 
@@ -34,11 +83,9 @@ export const devices = sqliteTable(
   'devices',
   {
     id: text('id').primaryKey(),
-
     uid: text('uid').notNull(),
-
     name: text('name').notNull(),
-
+    description: text('description'),
     type: text('type').notNull(),
 
     roomId: text('room_id').references(

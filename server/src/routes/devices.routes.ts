@@ -10,6 +10,10 @@ const DeviceSchema = Type.Object({
   id: Type.String(),
   uid: Type.String(),
   name: Type.String(),
+  description: Type.Union([
+    Type.String(),
+    Type.Null(),
+  ]),
   type: Type.String(),
 
   room: Type.Union([
@@ -61,6 +65,7 @@ export const deviceRoutes: FastifyPluginAsync = async (
           id: devices.id,
           uid: devices.uid,
           name: devices.name,
+          description: devices.description,
           type: devices.type,
 
           roomId: rooms.id,
@@ -87,24 +92,25 @@ export const deviceRoutes: FastifyPluginAsync = async (
           const online =
             device.lastSeenAt !== null &&
             Date.now() -
-              device.lastSeenAt.getTime() <
-              device.sampleIntervalSec *
-                3 *
-                1000;
+            device.lastSeenAt.getTime() <
+            device.sampleIntervalSec *
+            3 *
+            1000;
 
           return {
             id: device.id,
             uid: device.uid,
             name: device.name,
+            description: device.description,
             type: device.type,
 
             room:
               device.roomId &&
-              device.roomName
+                device.roomName
                 ? {
-                    id: device.roomId,
-                    name: device.roomName,
-                  }
+                  id: device.roomId,
+                  name: device.roomName,
+                }
                 : null,
 
             sampleIntervalSec:
