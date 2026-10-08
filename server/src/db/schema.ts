@@ -236,3 +236,34 @@ export const thhomeData = sqliteTable(
     ),
   ],
 );
+
+export const integrations = sqliteTable(
+  "integrations",
+  {
+    id: text("id").primaryKey(),
+
+    uid: text("uid").notNull().unique(),
+
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+
+    description: text("description"),
+
+    enabled: integer("enabled", { mode: "boolean" })
+      .notNull()
+      .default(true),
+
+    status: text("status")
+      .notNull()
+      .default("unknown"),
+
+    lastSyncAt: text("last_sync_at"),
+    lastError: text("last_error"),
+
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => ({
+    typeIdx: index("integrations_type_idx").on(table.type),
+  })
+);

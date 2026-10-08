@@ -1,37 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import { Plan} from '../../features/Plan/Plan'
-import { Card } from '../../features/Card/Card'
-import { getRooms, type Room } from '../../shared/api/rooms'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { Plan } from '../../features/Plan/Plan'
+import { Card } from '../../features/Card/Card'
+import { Integrations } from '../../features/Integrations/Integrations'
+
+import { useRooms } from '../../shared/hooks/useRooms'
+
 export function HomePage() {
-  const [activeRoom, setActiveRoom] = useState<string | null>(null)
-  const [rooms, setRooms] = useState<Room[]>([])
-  const requestController = useRef<AbortController | null>(null)
+  const [activeRoom, setActiveRoom] = useState<string | null>(null);
 
-  useEffect(() => {
-    const controller = new AbortController()
-    requestController.current = controller
-
-    void getRooms(controller.signal)
-      .then((response) => {
-        if (!controller.signal.aborted) {
-          setRooms(response.rooms)
-        }
-      })
-      .catch(() => {
-        // Keep the dashboard available if rooms cannot be loaded.
-      })
-      .finally(() => {
-        if (requestController.current === controller) {
-          requestController.current = null
-        }
-      })
-
-    return () => {
-      controller.abort()
-    }
-  }, [])
+  const rooms = useRooms();
 
   return (
     <section className='content'>
@@ -61,11 +40,7 @@ export function HomePage() {
             </aside>
           </div>
 
-          <div className='info'>
-            <Card>Weather</Card>
-            <Card>Yasno</Card>
-            <Card>Air quality</Card>
-          </div>
+          <Integrations />
     </section>
   )
 }

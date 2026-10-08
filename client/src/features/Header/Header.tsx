@@ -1,16 +1,41 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import styles from './Header.module.css'
 import icon from '../../assets/home.svg'
 import { SquareLibrary, Cog, Menu, X } from 'lucide-react'
 
+import { useRooms } from '../../shared/hooks/useRooms'
+
+type MobileNavItem = {
+  id: string | number
+  name: string
+  slug: string
+  icon?: ReactNode
+}
 
 export function Header() {
   const [iconSize] = useState(50)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
   const closeMenu = () => setIsMenuOpen(false)
+
+  const rooms = useRooms();
+
+  const mobileNavList: MobileNavItem[] = [
+    ...rooms,
+    {
+      id: 4124124,
+      slug: 'devices',
+      name: 'Devices',
+      icon: <SquareLibrary size={20} />
+    },
+    {
+      id: 4125555,
+      slug: 'settings',
+      name: 'Settings',
+      icon: <Cog size={20} />
+    },
+  ]
 
   return (
     <header className={styles.header}>
@@ -26,21 +51,13 @@ export function Header() {
 
       <nav className={`${styles.nav} glass-container`}>
         <ul>
-          <li>
-            <NavLink to="/living-room" className={({ isActive }) => isActive ? styles.active : ''}>
-              Living room
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/bedroom" className={({ isActive }) => isActive ? styles.active : ''}>
-              Bedroom
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/bath" className={({ isActive }) => isActive ? styles.active : ''}>
-              Bath
-            </NavLink>
-          </li>
+          {rooms.map((room) => (
+            <li key={`${room.id}${room.slug}`}>
+              <NavLink to={`/${room.slug}`} className={({ isActive }) => isActive ? styles.active : ''}>
+                {room.name}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -75,55 +92,18 @@ export function Header() {
         aria-hidden={!isMenuOpen}
       >
         <ul>
-          <li>
-            <NavLink
-              to="/living-room"
-              className={({ isActive }) => (isActive ? styles.mobileActive : '')}
-              onClick={closeMenu}
-            >
-              Living room
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/bedroom"
-              className={({ isActive }) => (isActive ? styles.mobileActive : '')}
-              onClick={closeMenu}
-            >
-              Bedroom
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/bath"
-              className={({ isActive }) => (isActive ? styles.mobileActive : '')}
-              onClick={closeMenu}
-            >
-              Bath
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/devices"
-              className={({ isActive }) => (isActive ? styles.mobileActive : '')}
-              onClick={closeMenu}
-              end
-            >
-              <SquareLibrary size={20} />
-              Devices
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/settings"
-              className={({ isActive }) => (isActive ? styles.mobileActive : '')}
-              onClick={closeMenu}
-              end
-            >
-              <Cog size={20} />
-              Settings
-            </NavLink>
-          </li>
+
+          {mobileNavList.map((room) => (
+            <li key={room.id}>
+              <NavLink
+                to={`/${room.slug}`}
+                className={({ isActive }) => isActive ? styles.active : ''}
+                onClick={closeMenu}>
+                {room?.icon && room?.icon}
+                {room.name}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
     </header>

@@ -15,7 +15,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 import type { Device } from '../../../shared/api/devices';
-
+import { useMeasurements } from '../../../shared/hooks/useMeasurements';
 import { getDeviceAnalytics, type AnalyticsResponse, type AnalyticsRange } from '../../../shared/api/analytics';
 
 import styles from './Page.module.css';
@@ -142,7 +142,7 @@ function MetricChart({
 
                     tooltipFormat: 'dd.MM.yyyy HH:mm',
                 },
-                
+
                 grid: {
                     color: 'rgba(255, 255, 255, 0.06)',
                 },
@@ -201,17 +201,11 @@ function MetricChart({
 export function THHomePage({
     device,
 }: THHomeContentProps) {
-    const [range, setRange] =
-        useState<AnalyticsRange>('24h');
-
-    const [analytics, setAnalytics] =
-        useState<AnalyticsResponse | null>(null);
-
-    const [isLoading, setIsLoading] =
-        useState(true);
-
-    const [error, setError] =
-        useState<string | null>(null);
+    const [range, setRange] = useState<AnalyticsRange>('24h');
+    const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const { measurement, loading } = useMeasurements(device.uid);
 
     useEffect(() => {
         let cancelled = false;
@@ -313,6 +307,62 @@ export function THHomePage({
                     </strong>
                 </div>
             </section>
+            <section>
+                <h2>Current state</h2>
+            </section>
+
+            {!loading &&
+                !error &&
+                analytics && (
+                    <section className={styles.statistics} >
+                        <article className={styles.statCard} >
+                            <span>
+                                Temperature
+                            </span>
+
+                            <strong>
+                                {measurement.temperatureC }
+                                °C
+                            </strong>
+                        </article>
+
+                        <article
+                            className={
+                                styles.statCard
+                            }
+                        >
+                            <span>
+                                Humidity
+                            </span>
+
+                            <strong>
+                                {measurement.humidityPct}
+                                %
+                            </strong>
+                        </article>
+
+                        <article
+                            className={
+                                styles.statCard
+                            }
+                        >
+                            <span>
+                                Battery
+                            </span>
+
+                            <strong>
+                                {measurement.batteryPct}
+                                %
+                            </strong>
+
+                            <small>
+                                {formatValue( measurement.batteryVoltage, 2)}{' '}
+                                V
+                            </small>
+                        </article>
+                    </section>
+                )}
+
 
             <section className={styles.analyticsHeader}>
                 <h3>Analytics</h3>
@@ -362,7 +412,7 @@ export function THHomePage({
                                 }
                             >
                                 <span>
-                                    Temperature
+                                    Average Temperature
                                 </span>
 
                                 <strong>
@@ -400,7 +450,7 @@ export function THHomePage({
                                 }
                             >
                                 <span>
-                                    Humidity
+                                    Average Humidity
                                 </span>
 
                                 <strong>
@@ -429,38 +479,6 @@ export function THHomePage({
                                             .max,
                                     )}
                                     %
-                                </small>
-                            </article>
-
-                            <article
-                                className={
-                                    styles.statCard
-                                }
-                            >
-                                <span>
-                                    Battery
-                                </span>
-
-                                <strong>
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .batteryPct
-                                            .avg,
-                                        0,
-                                    )}
-                                    %
-                                </strong>
-
-                                <small>
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .batteryVoltage
-                                            .avg,
-                                        2,
-                                    )}{' '}
-                                    V
                                 </small>
                             </article>
                         </section>

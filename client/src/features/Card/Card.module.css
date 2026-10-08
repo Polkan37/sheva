@@ -35,13 +35,13 @@
     width: 100%;
     display: flex;
     justify-content: flex-start;
-    gap: 12px;
+    gap: 8px;
 }
 .data span {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 16px;
+    gap: 2px;
+    font-size: 12px;
     font-weight: 500;
 }
 

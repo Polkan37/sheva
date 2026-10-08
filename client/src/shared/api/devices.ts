@@ -21,8 +21,10 @@ export type DevicesResponse = {
   devices: Device[];
 };
 
-export async function getDevices(): Promise<DevicesResponse> {
-  const response = await fetch('/api/devices/');
+export async function getDevices(signal?: AbortSignal): Promise<DevicesResponse> {
+  const response = await fetch('/api/devices/', {
+    signal,
+  });
 
   if (!response.ok) {
     throw new Error('Failed to load devices');

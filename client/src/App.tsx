@@ -4,6 +4,7 @@ import { HomePage } from './pages/home/HomePage'
 import { DevicesPage } from './pages/devices/DevicesPage'
 import { RoomPage } from './pages/room/RoomPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
+import { IntegrationPage } from './pages/integrations/IntegrationPage'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/devices" element={<DevicesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/integrations/:uid" element={<IntegrationPage />}/>
 
           <Route path="/:slug" element={<RoomPage />} />
         </Routes>

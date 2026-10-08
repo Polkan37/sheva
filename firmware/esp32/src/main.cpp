@@ -108,13 +108,13 @@ float batteryPercent(float voltage)
 {
     const int N = 11;
 
-    const float voltages[N] = {
+    const float voltages[] = {
         3.20, 3.30, 3.50, 3.60, 3.70,
         3.75, 3.80, 3.90, 4.00, 4.10, 4.20};
 
-    const float percents[N] = {
-        0, 5, 10, 20, 35,
-        45, 55, 70, 80, 90, 100};
+    const float percents[] = {
+        0, 5, 10, 20, 30,
+        35, 40, 60, 75, 90, 100};
 
     if (voltage <= voltages[0])
         return 0;
@@ -463,8 +463,7 @@ void loop()
     Serial.println("[POWER] Going to sleep");
 
     esp_sleep_enable_timer_wakeup(
-        SEND_INTERVAL * 1000ULL
-    );
+        SEND_INTERVAL * 1000ULL);
 
     Serial.flush();
 

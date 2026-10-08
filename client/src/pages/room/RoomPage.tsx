@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card } from '../../features/Card/Card';
+import { Integrations } from '../../features/Integrations/Integrations';
 import { getRooms, type Room } from '../../shared/api/rooms';
 import { getDevices, type Device } from '../../shared/api/devices';
 import { DeviceList } from '../../features/Devices/DeviceList';
@@ -73,11 +73,7 @@ export function RoomPage() {
                 </aside>
             </div>
 
-            <div className='info'>
-                <Card>Weather</Card>
-                <Card>Yasno</Card>
-                <Card>Air quality</Card>
-            </div>
+            <Integrations />
         </section>
     );
 }

@@ -1,0 +1,162 @@
+.card {
+  min-height: 120px;
+  min-width: 205px;
+  width: 245px;
+  position: relative;
+  overflow: hidden;
+
+  background: rgba(61, 63, 64, 0.46);
+
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.iconBlock {
+  flex-shrink: 0;
+}
+
+.mainIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 34px;
+  line-height: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.currentBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.temperature {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.condition {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metricLabel {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.metricValue {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.dot {
+  opacity: 0.6;
+}
+
+.forecastList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.forecastCard {
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.forecastDay {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.forecastIcon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.forecast {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.forecastPrecip {
+  font-size: 10px;
+}
+
+@media (max-width: 768px) {
+
+  .top {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  
+}
+
+@media (max-width: 560px) {
+  .top {
+    padding: 8px;
+  }
+
+
+  .meta {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

@@ -1,42 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getDevices, type Device } from '../../shared/api/devices';
-import { DeviceList } from '../../features/Devices/DeviceList';
+import { useSearchParams } from 'react-router-dom'
 
-import { DevicePageList } from '../../features/Devices/DevicePageList';
+import { useDevices } from '../../shared/hooks/useDevices'
+import { DeviceList } from '../../features/Devices/DeviceList'
+import { DevicePageList } from '../../features/Devices/DevicePageList'
 
 export function DevicesPage() {
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchParams] = useSearchParams();
-    const selectedUid = searchParams.get('uid');
+    const { devices, isLoading } = useDevices()
 
-    useEffect(() => {
-        async function loadDevices() {
-            try {
-                const { devices } = await getDevices();
-
-                setDevices(devices);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        loadDevices();
-    }, []);
-
-    if (isLoading) {
-        return <div>Loading...</div>;
-    }
+    const [searchParams] = useSearchParams()
+    const selectedUid = searchParams.get('uid')
 
     const selectedDevice =
-        devices.find(
-            (device) =>
-                device.uid === selectedUid,
-        ) ?? null;
+        devices.find((device) => device.uid === selectedUid) ?? null
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div>Loading...</div>
     }
 
     return (

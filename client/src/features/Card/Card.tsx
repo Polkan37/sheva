@@ -37,27 +37,31 @@ export function Card({
           <p>{room.name}</p>
 
           <div className={styles.data}>
-            <span title="temperature">
-              <Thermometer
-                size={24}
-                strokeWidth={1}
-              />
+            {room.temperature && (
+              <span title="temperature">
+                <Thermometer
+                  size={20}
+                  strokeWidth={1}
+                />
 
-              {formatTemperature(
-                room.temperature ?? undefined,
-              )}
-            </span>
+                {formatTemperature(
+                  room.temperature ?? undefined,
+                )}
+              </span>
+            )}
 
-            <span title="humidity">
-              <Droplet
-                size={24}
-                strokeWidth={1}
-              />
+            {room.humidity && (
+              <span title="humidity">
+                <Droplet
+                  size={20}
+                  strokeWidth={1}
+                />
 
-              {formatPercentage(
-                room.humidity ?? undefined,
-              )}
-            </span>
+                {formatPercentage(
+                  room.humidity ?? undefined,
+                )}
+              </span>
+            )}
           </div>
         </>
       ) : (

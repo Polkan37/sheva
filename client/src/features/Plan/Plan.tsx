@@ -294,7 +294,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="254"
                     className={styles.label}
                 >
-                    Living room
+                    Вітальня
                 </text>
             </g>
 
@@ -304,7 +304,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="220"
                     className={styles.label}
                 >
-                    Bedroom
+                    Спальня
                 </text>
             </g>
 
@@ -314,7 +314,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="203"
                     className={styles.label}
                 >
-                    Kitchen
+                    Кухня
                 </text>
             </g>
 
@@ -324,7 +324,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="377"
                     className={styles.label}
                 >
-                    Hall
+                    Коридор
                 </text>
             </g>
 
@@ -334,7 +334,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="300"
                     className={`${styles.label} ${styles.labelSmall}`}
                 >
-                    WC
+                    Туалет
                 </text>
             </g>
 
@@ -344,7 +344,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="375"
                     className={`${styles.label} ${styles.labelSmall}`}
                 >
-                    Bath
+                    Ванна
                 </text>
             </g>
             <g>
@@ -353,7 +353,7 @@ export function Plan({ activeRoom, onRoomHover }: PlanProps) {
                     y="90"
                     className={`${styles.label} ${styles.labelSmall}`}
                 >
-                    Balcony
+                    Балкон
                 </text>
             </g>
 
