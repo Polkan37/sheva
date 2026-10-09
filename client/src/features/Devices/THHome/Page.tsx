@@ -347,10 +347,10 @@ export function THHomePage({
                             }
                         >
                             <span>
-                                Battery
+                                {measurement.batteryPct <= 17 ? "Low Battery" : "Battery"}
                             </span>
 
-                            <strong>
+                            <strong className={measurement.batteryPct <= 17 ? "red-text" : ""}>
                                 {measurement.batteryPct}
                                 %
                             </strong>

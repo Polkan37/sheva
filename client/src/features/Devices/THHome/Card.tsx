@@ -39,8 +39,7 @@ export function THHomeCard({ device }: THHomeCardProps) {
             ? `${measurement.humidityPct.toFixed(0)}%`
             : '—'}
         </span>
-
-        <span title="battery">
+        <span className={batteryPercent <= 17 ? "red-text" : ""} title={batteryPercent <= 17 ? "low battery" : "battery"}>
           <BatteryIcon size={24} strokeWidth={1} />
 
           {batteryPercent != null
