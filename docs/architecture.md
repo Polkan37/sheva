@@ -1,909 +1,930 @@
-# Home Environment Monitoring System
-## Technical Design Document (TLD)
 
-**Status:** Draft  
-**Version:** 0.1  
-**Last updated:** 2026-09-14
+# SHEVA — System Architecture
+
+**Project:** Home Monitoring System  
+**Status:** Active development  
+**Last reviewed:** 2026-10-09  
+**Reference commit:** `aeb387bf825f5a61d10fb629933ee28272da7d36`  
+**Firmware version:** 0.2.0
 
 ---
 
 ## 1. Overview
 
-Home Environment Monitoring System is a local-first IoT system for monitoring environmental conditions inside a home.
+SHEVA is a local-first home monitoring system that combines data from physical IoT devices with external information services.
 
-Battery-powered ESP32 sensor nodes collect environmental data such as temperature and relative humidity and transmit measurements over the local Wi-Fi network. A local server receives, validates, stores, and exposes sensor measurements through an API.
+The system currently provides:
 
-A web dashboard provides current measurements, historical data, device status, and an interactive 2D apartment floor plan. The system is intended to operate without requiring public Internet access or third-party cloud infrastructure.
+- Indoor temperature and humidity monitoring.
+- Battery-powered ESP32 sensor nodes.
+- Battery voltage and charge estimation.
+- Device connectivity status.
+- Historical measurement storage and analytics.
+- Room-based monitoring.
+- An interactive apartment floor plan.
+- Electricity outage schedules through Yasno.
+- Weather information and forecasts through UkrHMC.
+- A responsive web dashboard.
 
-The initial implementation focuses on establishing a complete vertical data flow:
+The core IoT functionality operates over the local network. External integrations require Internet connectivity.
 
-`Sensor → ESP32 → Wi-Fi → Local API → Database → Dashboard`
-
----
-
-## 2. Goals
-
-The initial system should:
-
-- collect temperature measurements;
-- collect relative humidity measurements;
-- monitor sensor-node battery state;
-- support multiple independent sensor nodes;
-- periodically transmit measurements to a local server;
-- store historical measurements;
-- expose device and measurement data through an API;
-- display current readings in a web dashboard;
-- associate sensor nodes with rooms;
-- visualize rooms on an interactive apartment floor plan;
-- indicate whether a sensor node is online or offline;
-- operate inside the local network without depending on cloud infrastructure.
-
----
-
-## 3. Non-goals
-
-The initial version will not provide:
-
-- public Internet access to the dashboard;
-- cloud storage;
-- native mobile applications;
-- Zigbee communication;
-- remote actuator/device control;
-- machine-learning predictions;
-- Home Assistant integration;
-- complex user/role management;
-- production-scale distributed infrastructure.
-
-These features may be considered in future versions but must not block the MVP.
-
----
-
-## 4. Requirements
-
-### 4.1 Functional Requirements
-
-**FR-01:** A sensor node shall measure temperature.
-
-**FR-02:** A sensor node shall measure relative humidity.
-
-**FR-03:** A sensor node shall report battery/power information.
-
-**FR-04:** A sensor node shall periodically send measurements to the server.
-
-**FR-05:** Each measurement shall identify the originating device.
-
-**FR-06:** The server shall validate incoming measurements.
-
-**FR-07:** The server shall persist valid measurements.
-
-**FR-08:** The server shall expose registered devices through an API.
-
-**FR-09:** The server shall expose the latest measurement for a device.
-
-**FR-10:** The server shall expose historical measurements for a device.
-
-**FR-11:** The dashboard shall display the latest environmental measurements.
-
-**FR-12:** The dashboard shall associate devices with rooms.
-
-**FR-13:** The dashboard shall display device status.
-
-**FR-14:** The dashboard shall provide an interactive apartment floor plan.
-
-**FR-15:** The system shall support adding additional sensor nodes.
-
-### 4.2 Non-functional Requirements
-
-**NFR-01:** The core system shall operate without Internet connectivity.
-
-**NFR-02:** Sensor nodes shall support battery-powered operation.
-
-**NFR-03:** Historical measurements shall survive server restarts.
-
-**NFR-04:** Adding a sensor node shall not require modifying firmware of existing devices.
-
-**NFR-05:** The dashboard shall be accessible from devices connected to the home LAN.
-
-**NFR-06:** Components should remain replaceable where practical; for example, changing the database should not require rewriting ESP32 firmware.
-
-**NFR-07:** The MVP should minimize infrastructure and hardware dependencies.
-
-**NFR-08:** Failures of an individual sensor node shall not prevent other nodes from operating.
-
----
-
-## 5. System Architecture
-
-### 5.1 High-Level Architecture
+### System architecture
 
 ```text
-┌──────────────────────────────┐
-│ Sensor Node                  │
-│                              │
-│ SHT40 ─────┐                 │
-│            ├── ESP32         │
-│ INA219 ────┘       │         │
-│                    │ Wi-Fi   │
-└────────────────────┼─────────┘
-                     │
-                     ▼
-               Home Wi-Fi LAN
-                     │
-                     ▼
-┌──────────────────────────────┐
-│ Local Server                 │
-│                              │
-│ HTTP API                     │
-│      │                       │
-│      ▼                       │
-│ Application / Services       │
-│      │                       │
-│      ▼                       │
-│ Database                     │
-└──────────────┬───────────────┘
-               │
-               │ HTTP
-               ▼
-┌──────────────────────────────┐
-│ Web Dashboard                │
-│                              │
-│ • Current readings           │
-│ • Historical data            │
-│ • Device status              │
-│ • Apartment floor plan       │
-└──────────────────────────────┘
-```
+                   SYSTEM
 
-### 5.2 Main Components
-
-#### Sensor Node
-
-Responsible for:
-
-- reading physical sensors;
-- obtaining power/battery information;
-- connecting to the local Wi-Fi network;
-- constructing measurement payloads;
-- transmitting measurements to the server;
-- handling temporary communication failures.
-
-#### Local Server
-
-Responsible for:
-
-- accepting measurements from sensor nodes;
-- validating incoming data;
-- storing measurements;
-- managing device metadata;
-- exposing data to dashboard clients;
-- determining device status where appropriate.
-
-The production server is intended to run on a Raspberry Pi. During development, the same application may run locally on a laptop.
-
-#### Database
-
-Responsible for persistent storage of:
-
-- devices;
-- device metadata;
-- measurements;
-- timestamps;
-- room associations.
-
-#### Web Dashboard
-
-Responsible for:
-
-- presenting current measurements;
-- presenting historical measurements;
-- displaying sensor/device state;
-- mapping devices to rooms;
-- rendering an interactive 2D apartment plan.
-
----
-
-## 6. Sensor Node Architecture
-
-### 6.1 Hardware
-
-Planned hardware:
-
-- ESP32 — main controller and Wi-Fi communication;
-- SHT40 — temperature and relative humidity sensor;
-- INA219 — voltage/current/power monitoring;
-- TP4056 — Li-ion battery charging module;
-- 18650 Li-ion cell — autonomous power source.
-
-### 6.2 Logical Architecture
-
-```text
-                ┌──────────────┐
-                │    SHT40     │
-                │ Temp / RH    │
-                └──────┬───────┘
-                       │ I²C
-                       │
-┌────────────┐   ┌─────▼──────┐
-│   INA219   ├──►│    ESP32    │
-│   Power    │I²C│             │
-└────────────┘   └─────┬──────┘
-                       │
-                       │ Wi-Fi
-                       ▼
-                  Local Server
-
-
-18650
-  │
-  ▼
-TP4056
-  │
-  └── Power subsystem
-```
-
-> **TODO:** Final power wiring must be documented after the hardware configuration is validated. The charging path, ESP32 supply requirements, INA219 measurement point, and battery protection behavior must be verified before treating this diagram as the final electrical design.
-
-### 6.3 Firmware Responsibilities
-
-The ESP32 firmware should:
-
-1. initialize hardware;
-2. initialize I²C devices;
-3. connect to Wi-Fi;
-4. read temperature and humidity;
-5. obtain battery/power information;
-6. construct a measurement payload;
-7. transmit the payload;
-8. handle the transmission result;
-9. wait until the next measurement cycle.
-
-Future versions may introduce deep sleep for improved battery life.
-
----
-
-## 7. Backend Architecture
-
-### 7.1 Logical Layers
-
-```text
-HTTP Request
+  HARDWARE
+  ┌─────────────────────────────────┐
+  │ ESP32-C6-Zero                  │
+  │                                 │
+  │ SHT40        Temperature        │
+  │              Humidity           │
+  │                                 │
+  │ INA219       Battery voltage    │
+  │                                 │
+  │ Firmware 0.2.0                  │
+  └────────────────┬────────────────┘
+                   │
+                   │ Wi-Fi / HTTP POST
+                   ▼
+  BACKEND
+  ┌─────────────────────────────────┐
+  │ Node.js + Fastify + TypeScript  │
+  │                                 │
+  │ Device and room management      │
+  │ Measurement ingestion           │
+  │ Analytics                       │
+  │ External integration services   │
+  └──────────────┬──────────────────┘
+     ▲        ▲  │         ▲
+     │        |  ▼         |
+     │ ┌─────────────┐  ┌───────────┐
+     │ │ SQLite      │  │ External  │
+     │ │             │  │ APIs      │
+     │ │             │  │           │
+     │ │ Devices     │  │ Yasno     │
+     │ │ Rooms       │  │ UkrHMC    │
+     │ │ THHome data │  │           │
+     │ │ Integrations│  │           │
+     │ └─────────────┘  └───────────┘
      │
-     ▼
-┌──────────────┐
-│  API Layer   │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────┐
-│ Application      │
-│ / Service Layer  │
-└──────┬───────────┘
-       │
-       ▼
-┌──────────────┐
-│ Data Access  │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Database   │
-└──────────────┘
+     │  HTTP GET
+     │           
+     │              FRONTEND
+  ┌──┴──────────────────────────────┐
+  │ React + TypeScript + Vite       │
+  │                                 │
+  │ Home dashboard                  │
+  │ Room pages                      │
+  │ Device pages                    │
+  │ Integration pages               │
+  │ Charts and floor plan           │
+  └─────────────────────────────────┘
 ```
-
-### 7.2 Responsibilities
-
-**API layer**
-
-- defines HTTP endpoints;
-- parses requests;
-- validates basic request structure;
-- returns HTTP responses.
-
-**Application/service layer**
-
-- implements application rules;
-- processes measurements;
-- manages devices;
-- determines device state;
-- coordinates persistence.
-
-**Data-access layer**
-
-- reads and writes persistent data;
-- isolates database-specific operations from application logic.
-
-### 7.3 Implementation Technology
-
-Initial backend implementation may use Node.js.
-
-The exact framework is an implementation-level decision and does not need to be fixed by this TLD unless it materially affects the system architecture.
 
 ---
 
-## 8. Data Model
+## 2. Technology Stack
 
-### 8.1 Device
+### Firmware
 
-Conceptual structure:
-
-```text
-Device
-├── id
-├── name
-├── room
-├── createdAt
-└── metadata
-```
-
-Possible fields:
-
-| Field | Purpose |
+| Component | Technology |
 |---|---|
-| `id` | Stable unique device identifier |
-| `name` | Human-readable name |
-| `room` | Room/location associated with the device |
-| `createdAt` | Device creation/registration timestamp |
-| `metadata` | Optional hardware/firmware information |
+| Microcontroller | ESP32-C6-Zero |
+| Language | C++ |
+| Framework | Arduino |
+| Build system | PlatformIO |
+| Temperature and humidity | SHT40 |
+| Voltage monitoring | INA219 |
+| Communication | Wi-Fi |
+| Protocol | HTTP/JSON |
 
-### 8.2 Measurement
+### Backend
 
-Conceptual structure:
-
-```text
-Measurement
-├── id
-├── deviceId
-├── timestamp
-├── temperature
-├── humidity
-└── batteryVoltage
-```
-
-Possible fields:
-
-| Field | Purpose |
+| Component | Technology |
 |---|---|
-| `id` | Measurement identifier |
-| `deviceId` | Originating device |
-| `timestamp` | Time associated with measurement |
-| `temperature` | Temperature value |
-| `humidity` | Relative humidity value |
-| `batteryVoltage` | Measured battery voltage |
+| Runtime | Node.js |
+| Language | TypeScript |
+| HTTP framework | Fastify 5 |
+| API validation | TypeBox |
+| Database | SQLite |
+| Database driver | better-sqlite3 |
+| ORM | Drizzle ORM |
+| Schema migrations | drizzle-kit |
 
-### 8.3 Relationships
+### Frontend
 
-```text
-Device 1 ─────────────── * Measurement
-```
+| Component | Technology |
+|---|---|
+| UI library | React 19 |
+| Language | TypeScript |
+| Build tool | Vite 8 |
+| Routing | React Router 7 |
+| Charts | Chart.js |
+| Icons | Lucide React |
+| Styling | CSS and CSS Modules |
 
-One device can produce many measurements.
-
-Measurements are stored as independent records rather than serialized measurement history inside the `Device` record.
-
-### 8.4 Database
-
-A relational database will be used.
-
-**Initial candidate:** SQLite.
-
-SQLite is suitable for the MVP because the system is expected to have a small number of devices and a single local server.
-
-> **Open decision:** SQLite vs PostgreSQL for later versions.
+No external state-management framework is currently required.
 
 ---
 
-## 9. API Design
+## 3. Repository Structure
 
-The initial communication model assumes HTTP.
-
-### 9.1 Sensor API
-
-#### Submit measurement
-
-```http
-POST /api/measurements
+```text
+sheva/
+├── client/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── entities/
+│   │   │   └── Integration/
+│   │   ├── features/
+│   │   │   ├── Card/
+│   │   │   ├── Devices/
+│   │   │   │   └── THHome/
+│   │   │   ├── Header/
+│   │   │   ├── Integrations/
+│   │   │   │   ├── Ukrhmc/
+│   │   │   │   └── Yasno/
+│   │   │   └── Plan/
+│   │   ├── pages/
+│   │   │   ├── devices/
+│   │   │   ├── home/
+│   │   │   ├── integrations/
+│   │   │   ├── room/
+│   │   │   └── settings/
+│   │   ├── shared/
+│   │   │   ├── api/
+│   │   │   ├── hooks/
+│   │   │   └── lib/
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   └── package.json
+│
+├── server/
+│   ├── drizzle/
+│   │   └── meta/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── db/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   │   └── integrations/
+│   │   ├── app.ts
+│   │   └── server.ts
+│   ├── drizzle.config.ts
+│   └── package.json
+│
+├── firmware/
+│   └── esp32/
+│       ├── include/
+│       ├── lib/
+│       ├── src/
+│       │   └── main.cpp
+│       └── platformio.ini
+│
+└── docs/
+    ├── architecture.md
+    └── database.md
 ```
 
-Example payload:
+The repository separates firmware, backend, and frontend. Each component has its own build and runtime configuration.
+
+---
+
+## 4. Firmware Architecture
+
+### 4.1 Hardware
+
+The initial environmental sensor consists of:
+
+- ESP32-C6-Zero microcontroller.
+- SHT40 temperature/humidity sensor.
+- INA219 voltage monitoring module.
+- Rechargeable Li-ion battery and associated charging/protection hardware.
+
+The sensors communicate over the I²C bus.
+
+| Signal | ESP32 GPIO |
+|---|---|
+| SDA | GPIO21 |
+| SCL | GPIO22 |
+
+The SHT40 and INA219 share the same I²C bus.
+
+### 4.2 Measurement Lifecycle
+
+The firmware performs the following operations:
+
+1. Initialize the I²C bus and sensors.
+2. Read battery voltage.
+3. Check battery protection thresholds.
+4. Read temperature and humidity.
+5. Connect to the local Wi-Fi network.
+6. Generate a unique message identifier.
+7. Serialize a JSON payload.
+8. Send the measurement to the backend.
+9. Disable Wi-Fi.
+10. Enter a timed waiting state or deep sleep.
+
+The cycle repeats after the configured interval.
+
+### 4.3 Measurement Payload
+
+The current firmware transmits the following structure:
 
 ```json
 {
-  "deviceId": "bedroom-01",
-  "timestamp": "2026-09-14T16:30:00Z",
-  "temperature": 22.7,
-  "humidity": 48.3,
-  "batteryVoltage": 3.91
+  "schemaVersion": 1,
+  "messageId": "UNIQUE_MESSAGE_ID",
+  "temperatureC": 24.5,
+  "humidityPct": 52.8,
+  "batteryVoltage": 3.91,
+  "batteryPct": 61.5,
+  "rssiDbm": -57,
+  "firmwareVersion": "2.0.0"
 }
 ```
 
-The exact timestamp strategy is still to be decided. The server may eventually be responsible for assigning authoritative receive timestamps.
-
-### 9.2 Dashboard API
-
-Candidate endpoints:
+The device UID is part of the HTTP endpoint rather than the JSON body:
 
 ```http
-GET /api/devices
-GET /api/devices/:id
-GET /api/devices/:id/latest
-GET /api/devices/:id/measurements
+POST /api/devices/:uid/measurements
+Content-Type: application/json
 ```
 
-Possible future query parameters:
+The server also supports optional `sequence` and `capturedAt` fields, but the current firmware does not send them.
+
+### 4.4 Transmission and Retry Behavior
+
+Current firmware configuration:
+
+| Setting | Value |
+|---|---|
+| Normal interval | 60 seconds |
+| Error interval | 60 seconds |
+| Low battery interval | 300 seconds |
+| Wi-Fi timeout | 15 seconds |
+| HTTP timeout | 5 seconds |
+| HTTP attempts | 2 |
+
+A single message ID is reused across HTTP retry attempts.
+
+The backend uses this identifier to recognize duplicate measurements.
+
+HTTP status codes 200 and 201 are considered successful.
+
+### 4.5 Battery Management
+
+Battery voltage is calculated using INA219 bus and shunt voltage readings.
+
+Battery percentage is estimated through piecewise-linear interpolation between voltage and charge percentage reference points.
+
+The firmware implements battery protection with hysteresis:
+
+| Parameter | Threshold |
+|---|---|
+| Protection activation | <= 3.35 V |
+| Protection recovery | >= 3.65 V |
+
+When protection is active:
+
+- Wi-Fi communication is skipped.
+- Environmental measurements are not transmitted.
+- The next cycle occurs after 300 seconds.
+
+The protection state is stored in RTC memory.
+
+Battery percentage estimation is approximate and does not represent direct measurement of remaining battery capacity.
+
+Firmware-level low-voltage protection does not replace battery protection circuitry.
+
+### 4.6 Deep Sleep
+
+The firmware supports ESP32 timer-based deep sleep.
+
+When a USB Serial/JTAG host is connected, the firmware keeps the device awake and uses a timed loop instead.
+
+This allows serial debugging without repeatedly losing the USB connection during deep-sleep cycles.
+
+### 4.7 Current Limitations
+
+- Only one physical sensor implementation is present.
+- Device UID is configured in firmware.
+- Wi-Fi settings require firmware configuration.
+- OTA firmware updates are not implemented.
+- Telemetry uses HTTP without application-level device authentication.
+- Battery percentage is voltage-derived rather than measured through a fuel gauge.
+
+---
+
+## 5. Backend Architecture
+
+The server is a single Fastify application implemented in TypeScript.
+
+### 5.1 Application Initialization
+
+`server/src/server.ts` starts the HTTP server.
+
+`server/src/app.ts` constructs the Fastify instance and registers route modules.
+
+The server listens on:
+
+```text
+0.0.0.0:3000
+```
+
+### 5.2 Route Modules
+
+| Module | Responsibility |
+|---|---|
+| health.routes.ts | Health endpoint |
+| rooms.routes.ts | Room information |
+| devices.routes.ts | Device listing and status |
+| measurements.routes.ts | Measurement ingestion and retrieval |
+| analytics.routes.ts | Measurement aggregation |
+| integrations.routes.ts | External integration data |
+
+### 5.3 API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Health status |
+| GET | `/api/rooms` | Rooms and latest room measurements |
+| GET | `/api/devices/` | Registered devices |
+| POST | `/api/devices/:uid/measurements` | Submit measurement |
+| GET | `/api/devices/:uid/measurements` | Retrieve measurements |
+| GET | `/api/devices/:uid/analytics` | Aggregated statistics |
+| GET | `/api/integrations` | Registered integrations with provider data |
+
+### 5.4 Measurement Ingestion
+
+The ingestion endpoint validates the payload using TypeBox.
+
+Processing flow:
+
+1. Validate URL parameters and request body.
+2. Find the registered device using its UID.
+3. Reject unknown devices with HTTP 404.
+4. Create a server-side reception timestamp.
+5. Insert the measurement within a transaction.
+6. Ignore duplicate `(device_id, message_id)` combinations.
+7. Update device `lastSeenAt` and `updatedAt`.
+8. Return the ingestion result.
+
+Successful responses:
+
+**New measurement:**
+
+```json
+{
+  "accepted": true,
+  "duplicate": false,
+  "readingId": 123
+}
+```
+
+**Duplicate measurement:**
+
+```json
+{
+  "accepted": true,
+  "duplicate": true
+}
+```
+
+The database uniqueness constraint provides idempotency for repeated message IDs.
+
+### 5.5 Device Status
+
+The device's online state is calculated dynamically.
+
+A device is considered online when:
+
+```text
+currentTime - lastSeenAt
+    < sampleIntervalSec * 3
+```
+
+The online state is not stored as a separate database column.
+
+This approach avoids maintaining an additional persistent connectivity status.
+
+The configured sampling interval must reflect the device's actual reporting behavior to make the online indicator meaningful.
+
+### 5.6 Measurement Retrieval
 
 ```http
-GET /api/devices/:id/measurements?from=<timestamp>&to=<timestamp>
+GET /api/devices/:uid/measurements
 ```
 
-### 9.3 API Versioning
+Supported query parameters:
 
-API versioning is not required for the first local MVP.
+| Parameter | Description |
+|---|---|
+| amount | Required: `latest` or integer 1–1000 |
+| startNumber | Optional, one-based pagination offset |
 
-If external clients or backwards compatibility become important, endpoints may later be versioned:
+Examples:
 
-```text
-/api/v1/...
+```http
+GET /api/devices/:uid/measurements?amount=latest
+
+GET /api/devices/:uid/measurements?amount=100&startNumber=101
 ```
+
+Results are ordered by:
+
+1. `receivedAt DESC`
+2. `id DESC`
+
+The response includes total record count, pagination metadata, and measurements.
+
+### 5.7 Analytics
+
+```http
+GET /api/devices/:uid/analytics
+```
+
+The endpoint supports two mutually exclusive query modes.
+
+**Predefined period:**
+
+```http
+GET /api/devices/:uid/analytics?range=24h&points=200
+```
+
+Supported periods:
+
+- 1h
+- 6h
+- 24h
+- 7d
+- 30d
+
+**Explicit time interval:**
+
+```http
+GET /api/devices/:uid/analytics?from=2026-10-01T00:00:00Z&to=2026-10-02T00:00:00Z&points=200
+```
+
+The two modes cannot be combined.
+
+The `points` parameter defaults to 200 and supports values between 20 and 500.
+
+Analytics are calculated in SQLite.
+
+The endpoint computes:
+
+- Number of measurements.
+- Average value.
+- Minimum value.
+- Maximum value.
+
+Supported metrics:
+
+- Temperature.
+- Humidity.
+- Battery voltage.
+- Battery percentage.
+- Wi-Fi RSSI.
+
+Measurements are grouped into time buckets.
+
+Bucket resolution depends on the requested time range, number of points, and device sampling interval.
+
+The response contains an overall summary and aggregated time-series points.
+
+The time interval is inclusive of `from` and exclusive of `to`.
+
+### 5.8 Room Measurements
+
+`GET /api/rooms` returns registered rooms sorted by display order and name.
+
+A room may reference separate devices for temperature and humidity.
+
+For each configured source, the server retrieves the latest corresponding measurement.
+
+Consequently:
+
+- Room temperature and humidity can originate from different devices.
+- Missing measurement sources return `null`.
+- Rooms do not store duplicated current measurement values.
 
 ---
 
-## 10. Data Flow
+## 6. External Integrations
 
-### 10.1 Measurement Ingestion
+External integrations extend SHEVA beyond physical IoT sensors.
 
-```text
-SHT40 / INA219
-       │
-       ▼
-ESP32 reads sensors
-       │
-       ▼
-Create measurement
-       │
-       ▼
-HTTP POST
-       │
-       ▼
-Server receives request
-       │
-       ▼
-Validate payload
-       │
-       ▼
-Persist measurement
-       │
-       ▼
-Return response
-```
+### 6.1 Integration Registry
 
-### 10.2 Dashboard Read Flow
+Integration handling is implemented in:
 
 ```text
-User opens dashboard
-        │
-        ▼
-Dashboard requests data
-        │
-        ▼
-HTTP API
-        │
-        ▼
-Application service
-        │
-        ▼
-Database
-        │
-        ▼
-API response
-        │
-        ▼
-Dashboard updates UI
+server/src/services/integrations/
+├── yasno.ts
+└── ukrhmc.ts
 ```
 
-### 10.3 MVP Vertical Slice
+The registry maps integration types to provider handlers.
 
-The first end-to-end milestone is:
+| Integration type | Handler |
+|---|---|
+| power_outages | getYasnoIntegrationData |
+| weather | getUkrHmcWeather |
 
-```text
-ESP32
-  ↓
-hard-coded/test measurement
-  ↓
-POST /api/measurements
-  ↓
-server validation
-  ↓
-SQLite
-  ↓
-GET /api/devices/:id/latest
-  ↓
-dashboard
+The `weather.ts` file currently contains a placeholder implementation and is not used by the registry.
+
+### 6.2 Integration Retrieval
+
+```http
+GET /api/integrations
 ```
 
-Sensor integration and battery optimization can be developed incrementally after this path works.
+The server:
+
+1. Retrieves integration metadata from SQLite.
+2. Determines the handler from each integration's `type`.
+3. Requests provider-specific data.
+4. Combines metadata with provider data.
+5. Returns the integration collection.
+
+Providers are accessed during HTTP request processing.
+
+Provider responses are not stored as separate historical records.
+
+### 6.3 Yasno
+
+The Yasno service retrieves electricity outage information.
+
+It supports:
+
+- Resolving a configured street.
+- Resolving a configured house.
+- Determining electricity outage group/subgroup.
+- Fetching published schedules.
+- Reading today's and tomorrow's schedule.
+- Determining the next planned shutdown.
+- Determining the next planned restoration.
+- Returning provider address and schedule status.
+
+Configuration:
+
+```env
+YASNO_REGION_ID=
+YASNO_DSO_ID=
+YASNO_STREET=
+YASNO_HOUSE=
+```
+
+Resolved street and house IDs are cached in server process memory.
+
+The cache is cleared when an integration retrieval error occurs.
+
+The cache is not persistent and is not shared between server instances.
+
+### 6.4 UkrHMC Weather
+
+Weather data comes from an external UkrHMC endpoint.
+
+Configuration:
+
+```env
+LOCATION=Kyiv
+LATITUDE=50.4501
+LONGITUDE=30.5234
+```
+
+Returned information includes:
+
+**Current conditions**
+
+- Temperature.
+- Weather condition and code.
+- Relative humidity.
+- Atmospheric pressure.
+- Precipitation.
+- Wind speed and direction.
+- Dew point.
+- Day/night indicator.
+
+**Forecast**
+
+- Date.
+- Minimum temperature.
+- Maximum temperature.
+- Weather condition.
+- Precipitation.
+
+The service groups hourly forecast data into daily summaries and returns up to 10 days, subject to data availability from the provider.
+
+### 6.5 Integration Limitations
+
+The integration architecture currently has several limitations:
+
+- Provider data is fetched when requested.
+- No persistent provider response cache exists.
+- There is no background synchronization scheduler.
+- Integration status fields are not consistently maintained after requests.
+- The `enabled` field does not currently prevent provider fetching.
+- One provider failure can cause the overall integrations request to fail.
+- Unknown integration types return metadata without specialized data.
+
+These are implementation limitations, not guaranteed application features.
 
 ---
 
-## 11. Dashboard Architecture
+## 7. Frontend Architecture
 
-The dashboard is a browser-based local application.
+The frontend is a React single-page application using feature-oriented organization.
 
-### 11.1 MVP Features
+### 7.1 Routing
 
-The MVP dashboard should provide:
+Routing is defined in `client/src/App.tsx`.
 
-- current temperature;
-- current humidity;
-- battery status;
-- device online/offline status;
-- room/device association;
-- interactive apartment floor plan.
+| Route | Component | Purpose |
+|---|---|---|
+| `/` | HomePage | Main dashboard |
+| `/devices` | DevicesPage | Devices and measurements |
+| `/settings` | SettingsPage | Settings placeholder |
+| `/integrations/:uid` | IntegrationPage | Integration details |
+| `/:slug` | RoomPage | Individual room |
 
-### 11.2 Floor Plan
-
-The apartment plan will be represented using HTML/SVG.
-
-Each room should have a stable identifier so dashboard data can be associated with a visual room element.
-
-Conceptually:
-
-```html
-<g id="bedroom">
-  ...
-</g>
-
-<g id="living-room">
-  ...
-</g>
-```
-
-Interaction may include:
-
-- hover highlighting;
-- selection of a room;
-- displaying current room measurements;
-- status indication.
-
-### 11.3 Technology
-
-The MVP does not require React.
-
-Plain HTML, CSS, JavaScript, and SVG are sufficient unless UI complexity later justifies introducing a framework.
-
----
-
-## 12. Network and Communication
-
-### 12.1 Network Model
-
-The system is local-first.
+Device selection uses a URL query parameter:
 
 ```text
-                         Internet
-                            X
-                            │
-                    not required
-                            │
-
-┌─────────┐
-│  ESP32  │───────┐
-└─────────┘       │
-                  │
-┌─────────┐       │
-│ Laptop  │───────┼──── Home Wi-Fi LAN ──── Local Server
-└─────────┘       │
-                  │
-┌─────────┐       │
-│  Phone  │───────┘
-└─────────┘
+/devices?uid=living-room-env-01
 ```
 
-Sensor nodes and dashboard clients communicate with the server through the home LAN.
-
-No external cloud service is required for normal operation.
-
-### 12.2 Initial Transport
-
-Initial sensor-to-server transport:
-
-**HTTP over Wi-Fi**
-
-MQTT remains an alternative if later requirements justify:
-
-- publish/subscribe communication;
-- larger device counts;
-- asynchronous messaging;
-- additional IoT consumers.
-
-For the MVP, infrastructure simplicity is preferred.
-
----
-
-## 13. Security
-
-The system is not publicly exposed, but local-network operation does not eliminate security concerns.
-
-Initial security considerations:
-
-- API should reject malformed payloads;
-- devices should have stable identifiers;
-- the server should not listen on public Internet interfaces unless explicitly configured;
-- secrets such as Wi-Fi credentials must not be committed to Git;
-- configuration secrets should be separated from source code.
-
-### Open Security Questions
-
-- Should each ESP32 have an API key?
-- Is device authentication required for the MVP?
-- Should HTTPS be used inside the LAN?
-- How should device provisioning work?
-- How should compromised or unknown devices be rejected?
-
-Security mechanisms should remain proportional to the threat model and project scope.
-
----
-
-## 14. Reliability and Failure Handling
-
-### 14.1 Wi-Fi Unavailable
-
-Expected behavior:
-
-- sensor reading should not crash the device;
-- failed transmission should be handled explicitly;
-- the device should attempt communication again later.
-
-> **TODO:** Decide whether unsent measurements should be buffered locally.
-
-### 14.2 Server Unavailable
-
-The sensor node should:
-
-- detect failed requests;
-- avoid blocking indefinitely;
-- retry according to the chosen retry policy.
-
-> **TODO:** Define retry interval and maximum retry behavior.
-
-### 14.3 Invalid Measurement
-
-The server should reject malformed or invalid payloads.
-
-Possible validation examples:
-
-- missing `deviceId`;
-- missing required measurement fields;
-- non-numeric sensor values;
-- values outside physically plausible limits.
-
-### 14.4 Sensor Offline
-
-A device may be considered offline if no measurement has been received for a configured time period.
+Room pages use the room slug directly:
 
 ```text
-lastMeasurement + offlineThreshold < now
-→ OFFLINE
+/living-room
+/bedroom
+/bathroom
 ```
 
-> **TODO:** Define `offlineThreshold` based on the final measurement interval.
+### 7.2 Home Dashboard
 
-### 14.5 Server Restart
+The home page combines:
 
-Persisted measurements and registered device information must survive application and server restarts.
+- Interactive apartment floor plan.
+- Room cards.
+- Room hover highlighting.
+- Integration cards.
 
-### 14.6 Sensor Failure
+Room data is loaded through `useRooms`.
 
-Failure of one sensor node must not prevent:
+The active room is managed through local React state and shared between the floor plan and room cards.
 
-- other nodes from submitting measurements;
-- the dashboard from displaying existing data;
-- the server from operating normally.
+### 7.3 Device Views
 
----
+Device pages use a generic device collection with type-specific rendering.
 
-## 15. Deployment
+The THHome feature provides the implemented temperature/humidity device interface.
 
-### 15.1 Development
+It contains:
 
-During development:
+- Current measurements.
+- Battery state visualization.
+- Device statistics.
+- Historical charts.
+
+The device list and selected device view are separate components.
+
+### 7.4 Integration Views
+
+Integration UI components are registered in:
 
 ```text
-ESP32
-  │
-  │ Wi-Fi
-  ▼
-Developer Laptop
-├── Backend
-├── Database
-└── Dashboard
+client/src/features/Integrations/config.ts
 ```
 
-This allows development before Raspberry Pi deployment.
+The configuration maps integration UIDs to specialized card and page components.
 
-### 15.2 Target Deployment
+Currently supported UIDs:
 
-Target architecture:
+- `yasno`
+- `ukrhmc`
+
+This allows different integrations to have their own presentation while sharing the integration collection endpoint.
+
+### 7.5 Data Access Layer
+
+The frontend API layer is located in:
 
 ```text
-ESP32 nodes
-     │
-     │ Wi-Fi
-     ▼
-Raspberry Pi
-├── Backend service
-├── Database
-└── Dashboard
-     │
-     ▼
-Home LAN clients
+client/src/shared/api/
+├── analytics.ts
+├── client.ts
+├── devices.ts
+├── integrations.ts
+├── measurements.ts
+└── rooms.ts
 ```
 
-The exact Raspberry Pi model is not an architectural dependency as long as it can reliably run the required local services.
-
----
-
-## 16. Constraints
-
-Current project constraints:
-
-- ESP32 is used as the sensor controller;
-- SHT40 is used for temperature/humidity sensing;
-- INA219 is available for power monitoring;
-- TP4056 is available for battery charging;
-- a single 18650 cell is intended as the sensor power source;
-- sensors communicate with the ESP32 over I²C;
-- communication between sensor nodes and server uses the existing home Wi-Fi network;
-- the core system must not require public Internet connectivity;
-- Raspberry Pi is the intended production server;
-- development must be possible without Raspberry Pi by running the server on a laptop;
-- the MVP should avoid unnecessary additional hardware;
-- the system should remain understandable and maintainable as a portfolio project.
-
----
-
-## 17. Open Questions
-
-The following decisions are intentionally not finalized.
-
-### Communication
-
-- Is HTTP sufficient long-term, or should MQTT be introduced?
-- What measurement interval provides an acceptable balance between data resolution and battery life?
-- Should ESP32 nodes buffer measurements during server downtime?
-
-### Device Identity
-
-- How is `deviceId` generated?
-- Is device registration manual or automatic?
-- How is a device assigned to a room?
-
-### Time
-
-- Does the ESP32 send measurement timestamps?
-- Does the server assign timestamps?
-- Is NTP availability assumed?
-- How should measurements be handled if device time is invalid?
-
-### Storage
-
-- SQLite or PostgreSQL?
-- How long should measurements be retained?
-- Is aggregation/downsampling needed for old data?
-
-### Power
-
-- What is the expected battery life?
-- Will deep sleep be required?
-- How often should battery state be measured?
-- What battery metric should be exposed to the dashboard: voltage, percentage, or both?
-
-### Reliability
-
-- What is the retry policy?
-- Should measurements be queued locally?
-- What interval defines an offline device?
-
-### Security
-
-- Do sensor nodes require authentication?
-- How are credentials provisioned?
-- Is HTTPS justified inside the LAN?
-
-These questions should be resolved when implementation evidence or concrete requirements make the decision necessary.
-
----
-
-## 18. Architectural Decisions
-
-Major architectural decisions should be recorded separately as Architecture Decision Records (ADRs).
-
-Recommended structure:
+Reusable data-loading hooks:
 
 ```text
-docs/
-├── TLD.md
-└── adr/
-    ├── 0001-local-first-architecture.md
-    ├── 0002-device-communication-protocol.md
-    ├── 0003-database-selection.md
-    └── 0004-measurement-data-model.md
+client/src/shared/hooks/
+├── useDevices.ts
+├── useIntegrations.ts
+├── useMeasurements.ts
+└── useRooms.ts
 ```
 
-Each ADR should contain:
+Responsibilities:
 
-```text
-Title
-Status
-Context
-Considered Options
-Decision
-Rationale
-Consequences
+- API modules perform HTTP requests and define response types.
+- Hooks manage React state and request lifecycle.
+- Pages compose features and select data.
+- Features render domain-specific UI.
+
+The current hooks use React state and effects.
+
+There is no shared query cache or central real-time subscription layer.
+
+### 7.6 API Configuration
+
+The shared API client reads:
+
+```typescript
+import.meta.env.VITE_API_URL
 ```
 
-### Initial ADR Candidates
+However, some API modules use relative `/api/...` URLs directly.
 
-**ADR-0001 — Local-first architecture**
+This means deployment configuration must provide a compatible API origin or reverse-proxy setup.
 
-Decision candidate: the core system operates entirely on the home LAN and does not require cloud services.
+The tracked client `.env.example` uses `API_URL`, which does not match the variable expected by the shared API client.
 
-**ADR-0002 — HTTP for initial device communication**
-
-Decision candidate: ESP32 nodes submit measurements directly to the local server using HTTP for the MVP.
-
-**ADR-0003 — SQLite for initial persistence**
-
-Decision candidate: use SQLite for the initial single-server implementation.
-
-**ADR-0004 — Measurements stored as independent records**
-
-Decision candidate: store each measurement as a separate database record associated with a device rather than embedding measurement history inside the device record.
+This inconsistency should be corrected separately.
 
 ---
 
-## 19. MVP Definition
+## 8. Database Architecture
 
-The MVP is complete when at least one real sensor node can perform the following end-to-end flow:
+SHEVA currently defines four tables:
+
+| Table | Purpose |
+|---|---|
+| rooms | Room metadata and measurement source references |
+| devices | Physical IoT device registry |
+| thhome_data | Environmental measurements |
+| integrations | External integration metadata and configuration state |
+
+The database uses SQLite and Drizzle ORM.
+
+SQLite is configured with:
 
 ```text
-SHT40
-  ↓
-ESP32
-  ↓
-Wi-Fi
-  ↓
-HTTP API
-  ↓
-Database
-  ↓
-Dashboard
+foreign_keys = ON
+journal_mode = WAL
+busy_timeout = 5000
 ```
 
-The user must be able to:
+The schema and migration details are documented in:
 
-1. power the sensor node;
-2. receive real temperature and humidity measurements;
-3. persist those measurements on the local server;
-4. open the dashboard from the local network;
-5. see the latest measurement associated with the correct room;
-6. identify whether the sensor node is currently online.
-
-Battery optimization, advanced historical charts, MQTT, cloud connectivity, Home Assistant integration, and other extensions are outside the MVP unless they become necessary to satisfy these requirements.
+[database.md](./database.md)
 
 ---
 
-## 20. Document Evolution
+## 9. Security
 
-This document describes the intended architecture, not an immutable specification.
+### Current Implementation
 
-Use the following statuses when the design is uncertain:
+The system is primarily designed for use on a trusted local network.
 
-- **Draft** — architecture is actively being designed;
-- **Proposed** — a specific decision has been suggested but not validated;
-- **Accepted** — a decision has been implemented and adopted;
-- **Deprecated** — a previous decision is no longer used;
-- **TODO / Open Question** — insufficient evidence exists to make the decision yet.
+Existing protections include:
 
-The TLD should be updated when the high-level system architecture changes.
+- Request schema validation.
+- Database constraints.
+- Foreign key enforcement.
+- Duplicate-message prevention.
+- External API request timeouts where implemented.
 
-Implementation details should generally remain in source code, API specifications, hardware/wiring documentation, or dedicated low-level design documents rather than expanding this TLD indefinitely.
+Production deployment on untrusted networks requires additional security controls.
+
+---
+
+## 10. Deployment
+
+The server requires a configured database file path:
+
+```env
+DB_FILE_NAME=./data/iot.db
+```
+
+### Backend
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+npm start
+```
+
+### Frontend
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+```
+
+### Firmware
+
+The firmware is built and uploaded using PlatformIO.
+
+The current PlatformIO configuration contains machine-specific USB port paths, which may need adjustment on another computer.
+
+---
+
+## 11. Known Technical Limitations
+
+### Database migrations
+
+The migration journal references a baseline migration named `0000_previous_zemo`, but the corresponding SQL file is not present in the committed repository.
+
+Room migrations also require review because two migration files address overlapping schema changes.
+
+A clean migration path must be verified before relying on fresh installations.
+
+### Backend
+
+- No device authentication.
+- No explicit per-device API rate limiting.
+- External integration requests are not isolated from one another.
+- No background integration refresh.
+- No persistent third-party API cache.
+
+### Frontend
+
+- No centralized server-state caching.
+- No WebSocket or Server-Sent Events channel.
+- Inconsistent API base URL handling.
+- Settings page is not a complete configuration interface.
+- Integration and device data are loaded through independent hooks.
+
+### Firmware
+
+- Device configuration is compiled into firmware.
+- No OTA update mechanism.
+- No secure provisioning flow.
+- Voltage-based battery estimation.
+- Only one implemented physical device type.
+
+### Testing and Operations
+
+- No committed automated test suite was identified.
+- No complete deployment automation is present.
+- No documented database backup/restore automation.
+- No centralized monitoring or alerting infrastructure.
+
+---
+
+## 12. Future Development
+
+Potential improvements, not part of the current implementation:
+
+1. Repair and verify clean database migrations.
+2. Introduce device authentication.
+3. Standardize frontend API requests and error handling.
+4. Add integration refresh scheduling and caching.
+5. Respect the integration `enabled` state.
+6. Add per-integration error isolation.
+7. Implement device provisioning and configuration.
+8. Add automated tests.
+9. Add data retention and database backup policies.
+10. Introduce additional device types and integrations.
+
+The architecture should remain modular without adding distributed infrastructure until actual requirements justify it.
+
+---
+
+## 13. Documentation Scope
+
+This document describes the code committed to the referenced revision.
+
+It does not verify:
+
+- The current contents of an external or ignored SQLite database.
+- Locally stored secrets.
+- Production deployment behavior.
+- Actual battery runtime.
+- Hardware assembly quality.
+- External provider uptime or accuracy.
+
+Implementation details should be updated when the corresponding code changes.

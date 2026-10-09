@@ -16,7 +16,7 @@ namespace Config {
     constexpr int SCL_PIN = 22;
 
     constexpr char DEVICE_UID[] = "living-room-env-01";
-    constexpr char FIRMWARE_VERSION[] = "2.0.0";
+    constexpr char FIRMWARE_VERSION[] = "0.2.0";
 
     constexpr uint32_t SEND_INTERVAL_SEC = 60;
     constexpr uint32_t LOW_BATTERY_INTERVAL_SEC = 300;
