@@ -19,17 +19,6 @@ export function DevicePageList({
             device.type as keyof typeof deviceContentComponents 
         ] ?? deviceContentComponents.default;
 
-    if (!ContentComponent) {
-        return (
-            <div>
-                <h1>{device.name}</h1>
-                <p>
-                    No detailed view available for this device type.
-                </p>
-            </div>
-        );
-    }
-
     return (
         <ContentComponent
             device={device}

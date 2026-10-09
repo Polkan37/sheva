@@ -6,7 +6,7 @@ export interface YasnoScheduleSlot {
 
 export interface YasnoScheduleDay {
   slots: YasnoScheduleSlot[];
-  date: number;
+  date: string;
   status: string;
 }
 

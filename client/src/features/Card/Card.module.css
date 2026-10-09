@@ -1,7 +1,7 @@
 .card {
     min-height: 120px;
     min-width: 205px;
-    width: 235px;
+    width: 225px;
     position: relative;
     overflow: hidden;
 
@@ -23,13 +23,13 @@
 }
 
 .card p {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
     letter-spacing: 1.3px;
     margin: 0;
 }
 .card span {
-    font-size: 12px;
+    font-size: 11px;
 }
 .data {
     width: 100%;
