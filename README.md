@@ -50,6 +50,8 @@
 </td>
     <td width="50%">
 
+![TH home](./docs/assets/thhome-schema.jpg)
+
 ![TH home](./docs/assets/IMG_9341.jpeg)
     </td>
   </tr>
