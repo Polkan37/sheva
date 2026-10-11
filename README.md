@@ -21,7 +21,7 @@
 </td>
     <td width="50%">
 
-![Sheva](./docs/assets/sheva-img.png)
+![Sheva](./docs/assets/sheva-img.webp)
     </td>
   </tr>
 </table>
@@ -50,9 +50,9 @@
 </td>
     <td width="50%">
 
-![TH home](./docs/assets/thhome-schema.jpg)
+![TH home](./docs/assets/thhome-schema.webp)
 
-![TH home](./docs/assets/IMG_9341.jpeg)
+![TH home](./docs/assets/IMG_9341.webp)
     </td>
   </tr>
 </table>
@@ -75,14 +75,14 @@
 </td>
     <td width="30%">
 
-![TH home](./docs/assets/IMG_001.png)
-![TH home](./docs/assets/IMG_003.png)
+![TH home](./docs/assets/IMG_001.webp)
+![TH home](./docs/assets/IMG_003.webp)
 
 </td>
     <td width="30%">
 
-![TH home](./docs/assets/IMG_002.png)
-![TH home](./docs/assets/IMG_004.png)
+![TH home](./docs/assets/IMG_002.webp)
+![TH home](./docs/assets/IMG_004.webp)
     </td>
   </tr>
 </table>
