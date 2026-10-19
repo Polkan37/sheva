@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ac1a8f42-9849-47c5-8b6f-1d47a69f3072",
+  "id": "85b3ada0-1f0f-4790-a58d-47aa338a1c85",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "devices": {
@@ -28,11 +28,25 @@
           "notNull": true,
           "autoincrement": false
         },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "type": {
           "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "mac_address": {
+          "name": "mac_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "room_id": {
@@ -87,6 +101,13 @@
           ],
           "isUnique": true
         },
+        "devices_mac_address_uq": {
+          "name": "devices_mac_address_uq",
+          "columns": [
+            "mac_address"
+          ],
+          "isUnique": true
+        },
         "devices_room_idx": {
           "name": "devices_room_idx",
           "columns": [
@@ -119,6 +140,203 @@
         }
       }
     },
+    "integrations": {
+      "name": "integrations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "uid": {
+          "name": "uid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'unknown'"
+        },
+        "last_sync_at": {
+          "name": "last_sync_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "integrations_uid_unique": {
+          "name": "integrations_uid_unique",
+          "columns": [
+            "uid"
+          ],
+          "isUnique": true
+        },
+        "integrations_type_idx": {
+          "name": "integrations_type_idx",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "power_outages": {
+      "name": "power_outages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'unknown'"
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "power_outages_device_started_idx": {
+          "name": "power_outages_device_started_idx",
+          "columns": [
+            "device_id",
+            "started_at"
+          ],
+          "isUnique": false
+        },
+        "power_outages_active_uq": {
+          "name": "power_outages_active_uq",
+          "columns": [
+            "device_id"
+          ],
+          "isUnique": true,
+          "where": "\"power_outages\".\"ended_at\" IS NULL"
+        }
+      },
+      "foreignKeys": {
+        "power_outages_device_id_devices_id_fk": {
+          "name": "power_outages_device_id_devices_id_fk",
+          "tableFrom": "power_outages",
+          "tableTo": "devices",
+          "columnsFrom": [
+            "device_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "power_outages_valid_status": {
+          "name": "power_outages_valid_status",
+          "value": "\"power_outages\".\"status\" IN ('online', 'offline', 'unknown')"
+        },
+        "power_outages_valid_interval": {
+          "name": "power_outages_valid_interval",
+          "value": "\"power_outages\".\"ended_at\" IS NULL OR \"power_outages\".\"ended_at\" >= \"power_outages\".\"started_at\""
+        }
+      }
+    },
     "rooms": {
       "name": "rooms",
       "columns": {
@@ -134,6 +352,35 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "temperature_device_id": {
+          "name": "temperature_device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "humidity_device_id": {
+          "name": "humidity_device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
@@ -158,9 +405,64 @@
             "name"
           ],
           "isUnique": true
+        },
+        "rooms_slug_uq": {
+          "name": "rooms_slug_uq",
+          "columns": [
+            "slug"
+          ],
+          "isUnique": true
+        },
+        "rooms_display_order_idx": {
+          "name": "rooms_display_order_idx",
+          "columns": [
+            "display_order"
+          ],
+          "isUnique": false
+        },
+        "rooms_temperature_device_idx": {
+          "name": "rooms_temperature_device_idx",
+          "columns": [
+            "temperature_device_id"
+          ],
+          "isUnique": false
+        },
+        "rooms_humidity_device_idx": {
+          "name": "rooms_humidity_device_idx",
+          "columns": [
+            "humidity_device_id"
+          ],
+          "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "rooms_temperature_device_id_devices_id_fk": {
+          "name": "rooms_temperature_device_id_devices_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "devices",
+          "columnsFrom": [
+            "temperature_device_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "rooms_humidity_device_id_devices_id_fk": {
+          "name": "rooms_humidity_device_id_devices_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "devices",
+          "columnsFrom": [
+            "humidity_device_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

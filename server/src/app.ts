@@ -7,6 +7,7 @@ import { deviceRoutes } from './routes/devices.routes.js';
 import { measurementRoutes } from './routes/measurements.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
 import { integrationsRoutes } from './routes/integrations.routes.js';
+import { powerRoutes } from './routes/power.routes.js';
   
 export function buildApp() {
   const app = Fastify({
@@ -19,6 +20,7 @@ export function buildApp() {
   app.register(measurementRoutes);
   app.register(analyticsRoutes);
   app.register(integrationsRoutes);
+  app.register(powerRoutes);
   
   return app;
 }

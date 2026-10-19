@@ -88,6 +88,8 @@ export const devices = sqliteTable(
     description: text('description'),
     type: text('type').notNull(),
 
+    macAddress: text('mac_address'),
+
     roomId: text('room_id').references(
       () => rooms.id,
       {
@@ -122,6 +124,9 @@ export const devices = sqliteTable(
     uniqueIndex('devices_uid_uq').on(
       table.uid,
     ),
+
+    uniqueIndex('devices_mac_address_uq')
+      .on(table.macAddress),
 
     index('devices_room_idx').on(
       table.roomId,
@@ -267,3 +272,59 @@ export const integrations = sqliteTable(
     typeIdx: index("integrations_type_idx").on(table.type),
   })
 );
+
+
+
+export const powerOutages = sqliteTable(
+  'power_outages',
+  {
+    id: integer('id').primaryKey({
+      autoIncrement: true,
+    }),
+
+    deviceId: text('device_id')
+      .notNull()
+      .references(() => devices.id, {
+        onDelete: 'cascade',
+      }),
+
+    status: text('status', {
+      enum: ['online', 'offline', 'unknown'],
+    })
+      .notNull()
+      .default('unknown'),
+
+    startedAt: integer('started_at', {
+      mode: 'timestamp_ms',
+    }).notNull(),
+
+    endedAt: integer('ended_at', {
+      mode: 'timestamp_ms',
+    }),
+    
+    lastCheckedAt: integer('last_checked_at', {
+      mode: 'timestamp_ms',
+    }),
+  },
+  (table) => [
+    index('power_outages_device_started_idx').on(
+      table.deviceId,
+      table.startedAt,
+    ),
+
+    uniqueIndex('power_outages_active_uq')
+      .on(table.deviceId)
+      .where(sql`${table.endedAt} IS NULL`),
+
+    check(
+      'power_outages_valid_status',
+      sql`${table.status} IN ('online', 'offline', 'unknown')`,
+    ),
+
+    check(
+      'power_outages_valid_interval',
+      sql`${table.endedAt} IS NULL OR ${table.endedAt} >= ${table.startedAt}`,
+    ),
+  ],
+);
+

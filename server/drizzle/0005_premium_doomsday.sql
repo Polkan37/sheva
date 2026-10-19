@@ -1,1 +1,0 @@
-CREATE INDEX `integrations_type_idx` ON `integrations` (`type`);
