@@ -40,7 +40,7 @@ export function Card({
             {room.temperature && (
               <span title="temperature">
                 <Thermometer
-                  size={20}
+                  size={18}
                   strokeWidth={1}
                 />
 
@@ -53,7 +53,7 @@ export function Card({
             {room.humidity && (
               <span title="humidity">
                 <Droplet
-                  size={20}
+                  size={18}
                   strokeWidth={1}
                 />
 

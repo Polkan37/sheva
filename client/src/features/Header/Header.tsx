@@ -5,7 +5,8 @@ import styles from './Header.module.css'
 import icon from '../../assets/home.svg'
 import { SquareLibrary, Cog, Menu, X } from 'lucide-react'
 
-import { useRooms } from '../../shared/hooks/useRooms'
+import { useRooms } from '../../shared/hooks/useRooms';
+import { usePowerState } from '../../shared/hooks/usePowerState';
 
 type MobileNavItem = {
   id: string | number
@@ -15,10 +16,11 @@ type MobileNavItem = {
 }
 
 export function Header() {
-  const [iconSize] = useState(50)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const closeMenu = () => setIsMenuOpen(false)
-
+  const [iconSize] = useState(50);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const closeMenu = () => setIsMenuOpen(false);
+  const { state, error } = usePowerState('tuya-plug-01');
+  const powerStatus = error ? 'unknown' : (state?.status ?? 'unknown');
   const rooms = useRooms();
 
   const mobileNavList: MobileNavItem[] = [
@@ -46,6 +48,12 @@ export function Header() {
           width={iconSize}
           height={iconSize}
           alt="logo icon"
+        />
+
+        <span
+          className={`${styles.powerIndicator} ${styles[powerStatus]}`}
+          title={`Power: ${powerStatus}`}
+          aria-label={`Power status: ${powerStatus}`}
         />
       </NavLink>
 

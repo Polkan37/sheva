@@ -1,6 +1,7 @@
 import type { Device } from '../../shared/api/devices';
 import { THHomeCard } from './THHome/Card';
 import { DeviceCard } from './DeviceCard';
+import { SmartPlugCard } from './SmartPlug/Card';
 import { Link, useSearchParams } from 'react-router-dom';
 
 type DeviceListProps = {
@@ -9,6 +10,7 @@ type DeviceListProps = {
 
 const deviceComponents = {
     environment_sensor: THHomeCard,
+    smart_plug: SmartPlugCard,
     default: DeviceCard,
 } as const;
 

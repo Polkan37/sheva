@@ -288,15 +288,23 @@ h3 {
   color: #fff;
 }
 
+
+.circle {
+  position: relative;
+}
+
 .circle.active {
   background: none;
   width: auto;
+  position: relative;
 }
 
 .red-text {
   color: red;
 }
-
+.green-text {
+  color: #38b131;
+}
 
 @media (max-width: 1218px) {
 

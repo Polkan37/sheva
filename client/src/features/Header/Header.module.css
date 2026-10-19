@@ -105,6 +105,34 @@ header {
     display: none;
 }
 
+.powerIndicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+
+  border: .5px solid #eee;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.powerIndicator.online {
+  background-color: #4caf78;
+}
+
+.powerIndicator.offline {
+  background-color: #e57373;
+}
+
+.powerIndicator.unknown {
+  background-color: #848484;
+}
+
+
 @media (max-width: 768px) {
     header {
         padding: 24px 16px;

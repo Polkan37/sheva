@@ -25,7 +25,7 @@ export function THHomeCard({ device }: THHomeCardProps) {
 
       <div className="data">
         <span title="temperature">
-          <Thermometer size={24} strokeWidth={1} />
+          <Thermometer size={18} strokeWidth={1} />
 
           {measurement
             ? `${measurement.temperatureC.toFixed(1)} °C`
@@ -33,14 +33,14 @@ export function THHomeCard({ device }: THHomeCardProps) {
         </span>
 
         <span title="humidity">
-          <Droplet size={24} strokeWidth={1} />
+          <Droplet size={18} strokeWidth={1} />
 
           {measurement
             ? `${measurement.humidityPct.toFixed(0)}%`
             : '—'}
         </span>
         <span className={batteryPercent <= 17 ? "red-text" : ""} title={batteryPercent <= 17 ? "low battery" : "battery"}>
-          <BatteryIcon size={24} strokeWidth={1} />
+          <BatteryIcon size={18} strokeWidth={1} />
 
           {batteryPercent != null
             ? `${batteryPercent.toFixed(0)}%`

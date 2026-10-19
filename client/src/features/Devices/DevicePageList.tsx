@@ -1,6 +1,7 @@
 import type { Device } from '../../shared/api/devices';
 import { DeviceContent } from './DeviceContent';
 import { THHomePage } from './THHome/Page';
+import { SmartPlugPage } from './SmartPlug/Page';
 
 type DevicePageListProps = {
     device: Device;
@@ -8,6 +9,7 @@ type DevicePageListProps = {
 
 const deviceContentComponents = {
     environment_sensor: THHomePage,
+    smart_plug: SmartPlugPage,
     default: DeviceContent
 } as const;
 
@@ -16,7 +18,7 @@ export function DevicePageList({
 }: DevicePageListProps) {
     const ContentComponent =
         deviceContentComponents[
-            device.type as keyof typeof deviceContentComponents 
+        device.type as keyof typeof deviceContentComponents
         ] ?? deviceContentComponents.default;
 
     return (
