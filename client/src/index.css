@@ -306,6 +306,24 @@ h3 {
   color: #38b131;
 }
 
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.spinner {
+    color: rgba(255, 255, 255, 0.7);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @media (max-width: 1218px) {
 
   .dashboard {

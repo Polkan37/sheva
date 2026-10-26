@@ -255,34 +255,36 @@ export function SmartPlugPage({ device }: Props) {
                         <h3>Power history</h3>
 
 
-                        <h4>Hourly</h4>
+                        <h4>Power supply status timeline</h4>
                         <PowerChart history={history} />
 
 
                         <h4>Total by category</h4>
+
                         <div
                             className={styles.timeline}
                             role="img"
-                            aria-label="Power supply status timeline"
+                            aria-label="Power supply status distribution"
                         >
-                            {stats.timeline.map((period) => (
-                                <div
-                                    key={period.id}
-                                    className={`${styles.segment} ${styles[period.status]}`}
-                                    style={{
-                                        width: `${rangeDuration > 0
-                                            ? (period.durationMs / rangeDuration) * 100
-                                            : 0
-                                            }%`,
-                                    }}
-                                    title={[
-                                        labels[period.status],
-                                        `${new Date(period.start).toLocaleString()} —`,
-                                        new Date(period.end).toLocaleString(),
-                                        formatDuration(period.durationMs),
-                                    ].join(' ')}
-                                />
-                            ))}
+                            {(['online', 'offline', 'unknown'] as const).map((status) => {
+                                const duration = stats.duration[status];
+
+                                return (
+                                    <div
+                                        key={status}
+                                        className={`${styles.segment} ${styles[status]}`}
+                                        style={{
+                                            width: `${rangeDuration > 0
+                                                    ? (duration / rangeDuration) * 100
+                                                    : 0
+                                                }%`,
+                                        }}
+                                        title={`${labels[status]}: ${formatDuration(duration)} (${rangeDuration > 0
+                                            ? ((duration / rangeDuration) * 100).toFixed(1)
+                                            : 0}%)`}
+                                    />
+                                );
+                            })}
                         </div>
 
                         <div className={styles.timelineDates}>

@@ -82,11 +82,11 @@ export type UkrHmcWeather = {
 
 export async function getUkrHmcWeather(): Promise<UkrHmcWeather> {
 
-const location = { 
-  city: process.env.LOCATION ?? "Kyiv", 
-  latitude: process.env.LATITUDE ?? 50.4501, 
-  longitude: process.env.LONGITUDE ?? 30.5234 
-};
+    const location = {
+        city: process.env.LOCATION ?? "Kyiv",
+        latitude: process.env.LATITUDE ?? 50.4501,
+        longitude: process.env.LONGITUDE ?? 30.5234
+    };
     const params = new URLSearchParams({
         action: "getCityWeather",
         city: location.city,
@@ -107,6 +107,11 @@ const location = {
     }
 
     const raw = (await response.json()) as UkrHmcResponseRaw;
+    
+    if (!raw?.data || typeof raw.data !== "object") {
+        console.error("Unexpected UkrHMC response:", raw);
+        throw new Error("UkrHMC returned invalid weather data");
+    }
 
     const hours = Object.values(raw.data)
         .flat()

@@ -10,35 +10,38 @@ export async function integrationsRoutes(
 ) {
   app.get("/api/integrations", async () => {
     const rows = await db
-      .select()
-      .from(integrations);
+        .select()
+        .from(integrations);
 
     const result = await Promise.all(
-      rows.map(async (integration) => {
-        const specificData =
-          await getIntegrations(
-            integration.type,
-            integration.id,
-          );
+        rows.map(async (integration) => {
+            if (!integration.enabled) return null;
 
-        return {
-          id: integration.id,
-          uid: integration.uid,
-          name: integration.name,
-          description: integration.description,
-          type: integration.type,
-          enabled: integration.enabled,
+            try {
+                const specificData = await getIntegrations(
+                    integration.type,
+                    integration.id,
+                );
 
-          lastSyncAt: integration.lastSyncAt,
-          lastError: integration.lastError,
-          
-          ...specificData,
-        };
-      }),
+                return {
+                    ...integration,
+                    ...specificData,
+                };
+            } catch (error) {
+                app.log.error(
+                    { err: error, integration: integration.uid },
+                    "Integration failed",
+                );
+
+                return null;
+            }
+        }),
     );
 
     return {
-      integrations: result,
+        integrations: result.filter(
+            (integration) => integration !== null,
+        ),
     };
-  });
+});
 }

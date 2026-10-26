@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 
 import styles from './Header.module.css'
 import icon from '../../assets/home.svg'
-import { SquareLibrary, Cog, Menu, X } from 'lucide-react'
+import { SquareLibrary, Cog, Menu, X, Zap, ZapOff } from 'lucide-react'
 
 import { useRooms } from '../../shared/hooks/useRooms';
 import { usePowerState } from '../../shared/hooks/usePowerState';
@@ -20,7 +20,10 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
   const { state, error } = usePowerState('tuya-plug-01');
+
   const powerStatus = error ? 'unknown' : (state?.status ?? 'unknown');
+  const PowerIcon = powerStatus === 'offline' ? ZapOff : Zap;
+
   const rooms = useRooms();
 
   const mobileNavList: MobileNavItem[] = [
@@ -41,21 +44,27 @@ export function Header() {
 
   return (
     <header className={styles.header}>
-      <NavLink className='circle' to="/" end>
-        <img
-          className="glass-container"
-          src={icon}
-          width={iconSize}
-          height={iconSize}
-          alt="logo icon"
-        />
+      <div>
+        <NavLink className={styles.mini} to="/devices?uid=tuya-plug-01" end>
+          <PowerIcon
+            size={20}
+            fill="currentColor"
+            stroke="#295792"
+            className={`${styles.powerIndicator} ${styles[powerStatus]}`}
+            aria-label={`Power status: ${powerStatus}`}
+          />
+        </NavLink>
+        <NavLink className='circle' to="/" end>
+          <img
+            className="glass-container"
+            src={icon}
+            width={iconSize}
+            height={iconSize}
+            alt="logo icon"
+          />
 
-        <span
-          className={`${styles.powerIndicator} ${styles[powerStatus]}`}
-          title={`Power: ${powerStatus}`}
-          aria-label={`Power status: ${powerStatus}`}
-        />
-      </NavLink>
+        </NavLink>
+      </div>
 
       <nav className={`${styles.nav} glass-container`}>
         <ul>

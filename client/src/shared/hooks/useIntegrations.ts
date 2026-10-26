@@ -3,7 +3,9 @@ import { getIntegrations } from '../api/integrations'
 import type { Integration } from '../../entities/Integration/types'
 
 export function useIntegrations() {
-  const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController()
@@ -12,12 +14,17 @@ export function useIntegrations() {
       .then(({ integrations }) => setIntegrations(integrations))
       .catch((error) => {
         if (error.name !== 'AbortError') {
-          console.error('Failed to load integrations:', error)
+          setError('Failed to load integrations')
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false)
         }
       })
 
     return () => controller.abort()
   }, [])
 
-  return integrations
+  return { integrations, loading, error }
 }

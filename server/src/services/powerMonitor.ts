@@ -10,6 +10,7 @@ export type PowerStatus = 'online' | 'offline' | 'unknown';
 type Plug = {
     id: string;
     macAddress: string | null;
+    ipAddress: string | null;
     sampleIntervalSec: number;
 };
 
@@ -108,7 +109,7 @@ function recoverInterruptedMonitoring(deviceId: string): void {
 
 async function checkPlug(device: Plug): Promise<void> {
     const state = states.get(device.id) ?? {
-        ip: null,
+        ip: device.ipAddress,
         verifiedAt: 0,
         lastDiscoveryAt: 0,
         failures: 0,
@@ -121,111 +122,94 @@ async function checkPlug(device: Plug): Promise<void> {
         return;
     }
 
-    const gateway = env.networkGatewayIp;
+    const now = Date.now();
 
-    if (!gateway) {
+    const needsDiscovery =
+        !state.ip ||
+        now - state.verifiedAt >= VERIFY_INTERVAL_MS ||
+        state.failures > 0;
+
+    // Refresh MAC/IP mapping when necessary.
+    if (
+        needsDiscovery &&
+        now - state.lastDiscoveryAt >= DISCOVERY_RETRY_MS
+    ) {
+        state.lastDiscoveryAt = now;
+
+        try {
+            const discoveredIp = await discoverIpByMac(
+                device.macAddress,
+            );
+
+            if (discoveredIp) {
+                if (discoveredIp !== state.ip) {
+                    db.update(devices)
+                        .set({
+                            ipAddress: discoveredIp,
+                            updatedAt: new Date(),
+                        })
+                        .where(eq(devices.id, device.id))
+                        .run();
+                }
+
+                state.ip = discoveredIp;
+                state.verifiedAt = Date.now();
+                state.failures = 0;
+            }
+
+            // No discovery result does not invalidate
+            // the last confirmed IP.
+        } catch (error) {
+            console.error(
+                '[PowerMonitor] Discovery failed:',
+                error,
+            );
+        }
+    }
+
+    // No previously confirmed IP: status cannot
+    // be determined reliably.
+    if (!state.ip) {
         setStatus(device.id, 'unknown');
         return;
     }
 
-    const now = Date.now();
+    // Plug is reachable.
+    if (await ping(state.ip)) {
+        state.failures = 0;
+        setStatus(device.id, 'online');
+        return;
+    }
 
-    try {
-        // First discovery or scheduled 6-hour verification.
-        if (
-            !state.ip ||
-            now - state.verifiedAt >= VERIFY_INTERVAL_MS
-        ) {
-            if (
-                now - state.lastDiscoveryAt >= DISCOVERY_RETRY_MS
-            ) {
-                state.lastDiscoveryAt = now;
-
-                const ip = await discoverIpByMac(
-                    device.macAddress,
-                );
-
-                if (ip) {
-                    state.ip = ip;
-                    state.verifiedAt = Date.now();
-                    state.failures = 0;
-                } else if (
-                    state.ip &&
-                    now - state.verifiedAt >= VERIFY_INTERVAL_MS
-                ) {
-                    // Do not trust an expired IP/MAC mapping.
-                    state.ip = null;
-                }
-            }
-
-            if (!state.ip) {
-                setStatus(device.id, 'unknown');
-                return;
-            }
-        }
-
-        if (await ping(state.ip)) {
-            state.failures = 0;
-            setStatus(device.id, 'online');
-            return;
-        }
-
-        // A failed ping may mean that the router is down.
-        if (!(await ping(gateway))) {
-            state.failures = 0;
-            setStatus(device.id, 'unknown');
-            return;
-        }
-
-        state.failures++;
-
-        // Look for a new IP after failure.
-        if (
-            now - state.lastDiscoveryAt >= DISCOVERY_RETRY_MS
-        ) {
-            state.lastDiscoveryAt = now;
-
-            const ip = await discoverIpByMac(
-                device.macAddress,
-            );
-
-            if (ip && ip !== state.ip) {
-                state.ip = ip;
-                state.verifiedAt = Date.now();
-                state.failures = 0;
-
-                if (await ping(ip)) {
-                    setStatus(device.id, 'online');
-                    return;
-                }
-
-                state.failures = 1;
-            }
-        }
-
-        if (state.failures >= FAILURE_LIMIT) {
-            setStatus(device.id, 'offline');
-        } else {
-            // Keep previous status until failure is confirmed.
-            // If no previous observation exists, record unknown.
-            const active = db
-                .select({ status: powerOutages.status })
-                .from(powerOutages)
-                .where(
-                    and(
-                        eq(powerOutages.deviceId, device.id),
-                        isNull(powerOutages.endedAt),
-                    ),
-                )
-                .get();
-
-            setStatus(device.id, active?.status ?? 'unknown');
-        }
-    } catch (error) {
-        console.error('[PowerMonitor] Check failed:', error);
+    // Verify that the local network is available.
+    if (!(await ping(env.networkGatewayIp))) {
         state.failures = 0;
         setStatus(device.id, 'unknown');
+        return;
     }
+
+    // Gateway is reachable, but plug is not.
+    state.failures++;
+
+    if (state.failures >= FAILURE_LIMIT) {
+        setStatus(device.id, 'offline');
+        return;
+    }
+
+    // Preserve previous status until the
+    // second failed check.
+    const active = db
+        .select({ status: powerOutages.status })
+        .from(powerOutages)
+        .where(
+            and(
+                eq(powerOutages.deviceId, device.id),
+                isNull(powerOutages.endedAt),
+            ),
+        )
+        .get();
+
+    setStatus(device.id, active?.status ?? 'unknown');
 }
 
 export function startPowerMonitor(
@@ -259,6 +243,7 @@ export function startPowerMonitor(
                 .select({
                     id: devices.id,
                     macAddress: devices.macAddress,
+                    ipAddress: devices.ipAddress,
                     sampleIntervalSec: devices.sampleIntervalSec,
                 })
                 .from(devices)

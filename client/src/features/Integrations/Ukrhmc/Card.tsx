@@ -10,6 +10,7 @@ export default function WeatherCard({
     integration,
 }: WeatherCardProps) {
     const { city, current, forecast, updatedAt } = integration;
+    
 
     return (
         <article className={styles.card}>

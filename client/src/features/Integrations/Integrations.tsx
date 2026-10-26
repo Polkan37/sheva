@@ -7,7 +7,7 @@ import { useIntegrations } from '../../shared/hooks/useIntegrations'
 import { integrationConfig } from './config'
 
 export const Integrations = memo(function Integrations() {
-  const integrations = useIntegrations();
+  const { integrations } = useIntegrations();
 
   const integrationOrder = ['ukrhmc', 'yasno'];
   const sortedIntegrations = [...integrations].sort(

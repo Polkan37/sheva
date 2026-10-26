@@ -54,8 +54,7 @@ header {
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 999px;
 
-    background:
-        linear-gradient(180deg,
+    background: linear-gradient(180deg,
             rgba(188, 216, 248, 0.1) 0%,
             rgba(137, 181, 229, 0.07) 55%,
             rgba(152, 196, 237, 0.06) 100%);
@@ -105,31 +104,41 @@ header {
     display: none;
 }
 
+.mini {
+    position: absolute;
+    top: 18px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    z-index: 99;
+}
+
 .powerIndicator {
-  position: absolute;
-  right: 0;
-  top: 0;
+    position: relative;
+    padding: 1px;
+    z-index: 1;
 
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+    background: rgba(131, 160, 145, 0.46);
+    backdrop-filter: blur(30px) saturate(140%);
+    -webkit-backdrop-filter: blur(30px) saturate(140%);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  border: .5px solid #eee;
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 1;
+    border: 1px solid rgba(131, 160, 145, 0.46);
+    border-radius: 50%;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
 }
 
 .powerIndicator.online {
-  background-color: #4caf78;
+    color: #4caf78;
 }
 
 .powerIndicator.offline {
-  background-color: #e57373;
+    color: #eb4242;
 }
 
 .powerIndicator.unknown {
-  background-color: #848484;
+    color: #848484;
 }
 
 
@@ -141,6 +150,7 @@ header {
     .nav {
         padding: 0px 16px;
     }
+
     .header {
         justify-content: space-between;
         padding: 16px;
@@ -149,6 +159,10 @@ header {
     .nav,
     .desktopActions {
         display: none;
+    }
+
+    .mini {
+        top: 10px;
     }
 
     .menuButton {

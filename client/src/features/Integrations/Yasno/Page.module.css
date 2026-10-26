@@ -115,17 +115,41 @@
 }
 
 .hour {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
 
     min-height: 72px;
+
+    overflow: hidden;
+    isolation: isolate;
 
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
 
     background: rgba(255, 255, 255, 0.04);
+}
+
+.hourFill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 0;
+}
+
+.hourFill.Definite {
+    background: rgba(16, 35, 63, 0.9);
+}
+
+.hourFill.Possible {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.hourLabel {
+    position: relative;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .icon {

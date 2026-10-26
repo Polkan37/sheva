@@ -11,17 +11,26 @@ type Props = {
 type DayType = 'today' | 'tomorrow'
 
 
-function getSlotForHour(
+
+function getSlotsForHour(
   slots: YasnoIntegration['schedule']['today']['slots'],
   hour: number
 ) {
-  const start = hour * 60
-  const end = start + 60
+  const hourStart = hour * 60
+  const hourEnd = hourStart + 60
 
-  return slots.find(
-    (slot) => slot.start < end && slot.end > start
-  )
+  return slots
+    .filter(slot => slot.start < hourEnd && slot.end > hourStart)
+    .map(slot => ({
+      type: slot.type,
+      left: Math.max(0, slot.start - hourStart) / 60 * 100,
+      width: (
+        Math.min(slot.end, hourEnd) -
+        Math.max(slot.start, hourStart)
+      ) / 60 * 100,
+    }))
 }
+
 
 
 export default function YasnoPage({ integration }: Props) {
@@ -107,28 +116,32 @@ export default function YasnoPage({ integration }: Props) {
           </div>
         </div>
 
+
         <div className={styles.hours}>
           {Array.from({ length: 24 }, (_, hour) => {
-            const slot = getSlotForHour(day.slots, hour)
-
-            const type = slot?.type ?? 'NoOutages'
+            const slots = getSlotsForHour(day.slots, hour)
 
             return (
-              <div
-                key={hour}
-                className={`${styles.hour} ${styles[type]}`}
-              >
-                <span className={styles.icon}>
-                  {type === 'Definite' ? '↯' : '⚡'}
-                </span>
+              <div key={hour} className={styles.hour}>
+                {slots.map((slot, index) => (
+                  <div
+                    key={index}
+                    className={`${styles.hourFill} ${styles[slot.type] ?? ''}`}
+                    style={{
+                      left: `${slot.left}%`,
+                      width: `${slot.width}%`,
+                    }}
+                  />
+                ))}
 
-                <span>
+                <span className={styles.hourLabel}>
                   {String(hour).padStart(2, '0')}:00
                 </span>
               </div>
             )
           })}
         </div>
+
 
         <div className={styles.legend}>
           <div>

@@ -1,0 +1,1 @@
+ALTER TABLE `devices` ADD `ip_address` text;

@@ -89,7 +89,8 @@ export const devices = sqliteTable(
     type: text('type').notNull(),
 
     macAddress: text('mac_address'),
-
+    ipAddress: text('ip_address'),
+    
     roomId: text('room_id').references(
       () => rooms.id,
       {
@@ -301,7 +302,7 @@ export const powerOutages = sqliteTable(
     endedAt: integer('ended_at', {
       mode: 'timestamp_ms',
     }),
-    
+
     lastCheckedAt: integer('last_checked_at', {
       mode: 'timestamp_ms',
     }),

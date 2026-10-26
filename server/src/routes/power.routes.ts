@@ -116,12 +116,19 @@ export const powerRoutes: FastifyPluginAsync = async (
         )
         .get();
 
+      const lastCheckedAt = active?.lastCheckedAt ?? null;
+
+      const isFresh =
+        lastCheckedAt !== null &&
+        Date.now() - lastCheckedAt.getTime() < 180_000;
+
       return {
         deviceUid: uid,
-        status: active?.status ?? 'unknown',
-        since: active?.startedAt.toISOString() ?? null,
-        lastCheckedAt:
-          active?.lastCheckedAt?.toISOString() ?? null,
+        status: isFresh ? active!.status : 'unknown',
+        since: isFresh
+          ? active!.startedAt.toISOString()
+          : null,
+        lastCheckedAt: lastCheckedAt?.toISOString() ?? null,
       };
     },
   );
