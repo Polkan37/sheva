@@ -1,0 +1,207 @@
+
+.section {
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(61, 63, 64, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sectionHeader,
+.integration,
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+header.sectionHeader {
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 4px;
+}
+
+.sectionHeader span,
+.integrationInfo span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: var(--primary-300);
+}
+
+.integrationList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.integration {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.integrationInfo {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.integrationInfo span {
+  overflow-wrap: anywhere;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.enabled {
+  color: #75d994;
+  background: rgba(61, 170, 92, 0.15);
+}
+
+.disabled {
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+.actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.actions button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.form input:not([type='checkbox']),
+.form select,
+.form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  outline: none;
+  background: #30423a;
+  color: white;
+  font: inherit;
+}
+
+.form input:focus,
+.form select:focus,
+.form textarea:focus {
+  border-color: var(--primary-300);
+}
+
+.form .checkboxLabel {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkboxLabel input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary-color);
+}
+
+.formActions {
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.formActions > button:not(.primaryButton) {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  background: transparent;
+  cursor: pointer;
+}
+
+.formActions button:disabled,
+.actions button:disabled,
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 12px 0;
+  color: #ff9999;
+  font-size: 13px;
+}
+
+.loading,
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 600px) {
+  .section {
+    padding: 16px;
+  }
+
+  .integration {
+    flex-wrap: wrap;
+  }
+
+  .toggle {
+    margin-left: auto;
+  }
+}

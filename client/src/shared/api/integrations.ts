@@ -1,36 +1,96 @@
+
+import { apiFetch, apiRequest } from './client'
 import type {
   IntegrationsResponse,
   YasnoIntegration,
-} from "../../entities/Integration/types";
+} from '../../entities/Integration/types'
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+export type IntegrationSettings = {
+  id: string
+  uid: string
+  name: string
+  type: string
+  description: string | null
+  enabled: boolean
+  status: string
+  lastError: string | null
+  lastSyncAt: string | null
+  createdAt: string
+  updatedAt: string
+}
 
-export async function getIntegrations(
-  signal?: AbortSignal,
-): Promise<IntegrationsResponse> {
-  const response = await fetch(`${API_URL}/api/integrations`, {
+export type IntegrationInput = Pick<
+  IntegrationSettings,
+  | 'uid'
+  | 'name'
+  | 'type'
+  | 'description'
+  | 'enabled'
+>
+
+type IntegrationSettingsResponse = {
+  integrations: IntegrationSettings[]
+}
+
+
+export function getIntegrations(signal?: AbortSignal) {
+  return apiFetch<IntegrationsResponse>(
+    '/api/integrations',
     signal,
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to load integrations");
-  }
-
-  return response.json();
+  )
 }
 
 export async function getYasno(
   signal?: AbortSignal,
 ): Promise<YasnoIntegration> {
-  const data = await getIntegrations(signal);
+  const { integrations } = await getIntegrations(signal)
 
-  const yasno = data.integrations.find(
-    (integration) => integration.uid === "yasno",
-  );
+  const yasno = integrations.find(
+    (integration) => integration.uid === 'yasno',
+  )
 
   if (!yasno) {
-    throw new Error("Yasno integration not found");
+    throw new Error('Yasno integration not found')
   }
 
-  return yasno;
+  return yasno as YasnoIntegration
+}
+
+export function getIntegrationSettings(
+  signal?: AbortSignal,
+) {
+  return apiFetch<IntegrationSettingsResponse>(
+    '/api/integrations/settings',
+    signal,
+  )
+}
+
+export function createIntegration(data: IntegrationInput) {
+  return apiRequest<IntegrationSettings>(
+    '/api/integrations',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+  )
+}
+
+export function updateIntegration(
+  id: string,
+  data: Partial<IntegrationInput>,
+) {
+  return apiRequest<IntegrationSettings>(
+    `/api/integrations/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    },
+  )
+}
+
+export function deleteIntegration(id: string) {
+  return apiRequest<void>(
+    `/api/integrations/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+  )
 }

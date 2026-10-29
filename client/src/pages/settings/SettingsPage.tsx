@@ -1,5 +1,7 @@
 import { RoomsSettings } from '../../features/Settings/Rooms/RoomsSettings'
 import { DevicesSettings } from '../../features/Settings/Devices/DevicesSettings'
+import { IntegrationsSettings } from '../../features/Settings/Integrations/IntegrationsSettings'
+
 import styles from './SettingsPage.module.css'
 
 export function SettingsPage() {
@@ -11,6 +13,7 @@ export function SettingsPage() {
 
       <RoomsSettings />
       <DevicesSettings />
+      <IntegrationsSettings />
     </section>
   )
 }

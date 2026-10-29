@@ -257,7 +257,7 @@ export const integrations = sqliteTable(
 
     enabled: integer("enabled", { mode: "boolean" })
       .notNull()
-      .default(true),
+      .default(false),
 
     status: text("status")
       .notNull()
