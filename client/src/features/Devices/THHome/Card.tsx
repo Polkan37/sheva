@@ -13,6 +13,7 @@ export function THHomeCard({ device }: THHomeCardProps) {
   const { measurement } = useMeasurements(device.uid);
 
   const batteryPercent = measurement?.batteryPct;
+  const isLowBattery =  batteryPercent != null && batteryPercent <= 17;
   const BatteryIcon = getBatteryIcon(batteryPercent);
 
   return (
@@ -39,7 +40,7 @@ export function THHomeCard({ device }: THHomeCardProps) {
             ? `${measurement.humidityPct.toFixed(0)}%`
             : '—'}
         </span>
-        <span className={batteryPercent <= 17 ? "red-text" : ""} title={batteryPercent <= 17 ? "low battery" : "battery"}>
+        <span className={isLowBattery ? 'red-text' : ''} title={isLowBattery ? 'low battery' : 'battery'}>
           <BatteryIcon size={18} strokeWidth={1} />
 
           {batteryPercent != null

@@ -74,6 +74,7 @@ export function IntegrationsSettings() {
         setError(null)
     }
 
+
     async function handleSave(data: IntegrationInput) {
         if (isSaving) return
 
@@ -87,7 +88,6 @@ export function IntegrationsSettings() {
                 await createIntegration(data)
             }
 
-            await loadIntegrations()
             closeForm()
         } catch (err) {
             setError(
@@ -95,10 +95,19 @@ export function IntegrationsSettings() {
                     ? err.message
                     : 'Failed to save integration',
             )
+            setIsSaving(false)
+            return
+        }
+
+        try {
+            await loadIntegrations()
+        } catch {
+            setError('Integration saved, but failed to refresh the list')
         } finally {
             setIsSaving(false)
         }
     }
+
 
     async function handleDelete() {
         if (!integrationToDelete || isSaving) return

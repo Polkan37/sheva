@@ -49,7 +49,7 @@ export function formatMinutes(minutes: number) {
     return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 };
 
-export function formatScheduleDate(date: number) {
+export function formatScheduleDate(date: string | number) {
     return new Intl.DateTimeFormat("uk-UA", {
         day: "numeric",
         month: "short",

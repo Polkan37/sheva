@@ -124,7 +124,8 @@ function MetricChart({
             tooltip: {
                 callbacks: {
                     label(context) {
-                        return `${label}: ${context.parsed.y.toFixed(1)}${unit}`;
+                        const value = context.parsed.y;
+                        return value == null ? `${label}: —` : `${label}: ${value.toFixed(1)}${unit}`;
                     },
                 },
             },
@@ -206,6 +207,8 @@ export function THHomePage({
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { measurement, loading } = useMeasurements(device.uid);
+    const batteryPercent = measurement?.batteryPct ?? null;
+    const isLowBattery = batteryPercent !== null && batteryPercent <= 17;
 
     useEffect(() => {
         let cancelled = false;
@@ -307,61 +310,47 @@ export function THHomePage({
                     </strong>
                 </div>
             </section>
+
             <section>
                 <h2>Current state</h2>
             </section>
 
-            {!loading &&
-                !error &&
-                analytics && (
-                    <section className={styles.statistics} >
-                        <article className={styles.statCard} >
-                            <span>
-                                Temperature
-                            </span>
+            {!loading && measurement ? (
+                <section className={styles.statistics}>
+                    <article className={styles.statCard}>
+                        <span>Temperature</span>
+                        <strong>
+                            {measurement.temperatureC}°C
+                        </strong>
+                    </article>
 
-                            <strong>
-                                {measurement.temperatureC }
-                                °C
-                            </strong>
-                        </article>
+                    <article className={styles.statCard}>
+                        <span>Humidity</span>
+                        <strong>
+                            {measurement.humidityPct}%
+                        </strong>
+                    </article>
 
-                        <article
-                            className={
-                                styles.statCard
-                            }
-                        >
-                            <span>
-                                Humidity
-                            </span>
+                    <article className={styles.statCard}>
+                        <span>
+                            {isLowBattery ? 'Low Battery' : 'Battery'}
+                        </span>
 
-                            <strong>
-                                {measurement.humidityPct}
-                                %
-                            </strong>
-                        </article>
+                        <strong className={isLowBattery ? 'red-text' : ''}>
+                            {batteryPercent !== null
+                                ? `${batteryPercent}%`
+                                : '—'}
+                        </strong>
 
-                        <article
-                            className={
-                                styles.statCard
-                            }
-                        >
-                            <span>
-                                {measurement.batteryPct <= 17 ? "Low Battery" : "Battery"}
-                            </span>
+                        <small>
+                            {formatValue(measurement.batteryVoltage, 2)} V
+                        </small>
+                    </article>
+                </section>
+            ) : !loading ? (
+                <p>No measurements available.</p>
+            ) : null}
 
-                            <strong className={measurement.batteryPct <= 17 ? "red-text" : ""}>
-                                {measurement.batteryPct}
-                                %
-                            </strong>
-
-                            <small>
-                                {formatValue( measurement.batteryVoltage, 2)}{' '}
-                                V
-                            </small>
-                        </article>
-                    </section>
-                )}
 
 
             <section className={styles.analyticsHeader}>

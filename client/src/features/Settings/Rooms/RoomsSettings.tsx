@@ -68,6 +68,7 @@ export function RoomsSettings() {
     setError(null)
   }
 
+
   async function handleSave(data: RoomInput) {
     if (isSaving) return
 
@@ -81,12 +82,19 @@ export function RoomsSettings() {
         await createRoom(data)
       }
 
-      await loadRooms()
       closeForm()
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to save room',
       )
+      setIsSaving(false)
+      return
+    }
+
+    try {
+      await loadRooms()
+    } catch {
+      setError('Room saved, but failed to refresh the list')
     } finally {
       setIsSaving(false)
     }

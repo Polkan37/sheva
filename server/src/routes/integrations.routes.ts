@@ -21,8 +21,6 @@ const IntegrationFieldsSchema = Type.Object({
     type: Type.String({ minLength: 1 }),
     description: NullableString,
     enabled: Type.Boolean(),
-    status: Type.String({ minLength: 1 }),
-    lastError: NullableString,
 });
 
 const CreateIntegrationSchema = Type.Object({
@@ -32,10 +30,6 @@ const CreateIntegrationSchema = Type.Object({
 
     description: Type.Optional(NullableString),
     enabled: Type.Optional(Type.Boolean()),
-    status: Type.Optional(
-        IntegrationFieldsSchema.properties.status,
-    ),
-    lastError: Type.Optional(NullableString),
 }, { additionalProperties: false });
 
 const UpdateIntegrationSchema = Type.Partial(
@@ -104,8 +98,6 @@ export async function integrationsRoutes(app: FastifyInstance) {
                 type,
                 description = null,
                 enabled = false,
-                status = 'unknown',
-                lastError = null,
             } = request.body;
 
             const existingIntegration = db
@@ -131,8 +123,6 @@ export async function integrationsRoutes(app: FastifyInstance) {
                     type,
                     description,
                     enabled,
-                    status,
-                    lastError,
                     createdAt: now,
                     updatedAt: now,
                 })

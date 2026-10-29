@@ -79,6 +79,7 @@ export function DevicesSettings() {
     setError(null)
   }
 
+
   async function handleSave(data: DeviceInput) {
     if (isSaving) return
 
@@ -92,16 +93,24 @@ export function DevicesSettings() {
         await createDevice(data)
       }
 
-      await loadDevices()
       closeForm()
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to save device',
       )
+      setIsSaving(false)
+      return
+    }
+
+    try {
+      await loadDevices()
+    } catch {
+      setError('Device saved, but failed to refresh the list')
     } finally {
       setIsSaving(false)
     }
   }
+
 
   async function handleDelete() {
     if (!deviceToDelete || isSaving) return

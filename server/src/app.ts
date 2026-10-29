@@ -8,11 +8,14 @@ import { measurementRoutes } from './routes/measurements.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
 import { integrationsRoutes } from './routes/integrations.routes.js';
 import { powerRoutes } from './routes/power.routes.js';
+import { registerErrorHandler } from './errors/errorHandler.js'
   
 export function buildApp() {
   const app = Fastify({
     logger: true,
   }).withTypeProvider<TypeBoxTypeProvider>();
+
+  registerErrorHandler(app);
 
   app.register(healthRoutes);
   app.register(roomRoutes);
