@@ -1,0 +1,44 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.content p {
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.actions button {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  background: transparent;
+  cursor: pointer;
+}
+
+.actions .danger {
+  border-color: transparent;
+  background: #b43b42;
+}
+
+.actions .danger:hover {
+  background: #962f35;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #ff9999 !important;
+  font-size: 13px;
+}

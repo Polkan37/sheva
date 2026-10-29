@@ -1,11 +1,16 @@
-
+import { RoomsSettings } from '../../features/Settings/Rooms/RoomsSettings'
+import { DevicesSettings } from '../../features/Settings/Devices/DevicesSettings'
+import styles from './SettingsPage.module.css'
 
 export function SettingsPage() {
-   
+  return (
+    <section className={`content ${styles.settings}`}>
+      <header className={styles.header}>
+        <h1>Settings</h1>
+      </header>
 
-    return (
-        <section className='content'>
-          <p className='help-text'>settings page</p>
-        </section>
-    );
+      <RoomsSettings />
+      <DevicesSettings />
+    </section>
+  )
 }
