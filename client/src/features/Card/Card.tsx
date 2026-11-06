@@ -44,7 +44,10 @@ export function Card({
                   strokeWidth={1}
                 />
 
+                {/* the outer `room.temperature &&` guard already excludes
+                null/undefined, so the ?? fallback here is unreachable */}
                 {formatTemperature(
+                  /* v8 ignore next */
                   room.temperature ?? undefined,
                 )}
               </span>
@@ -57,7 +60,10 @@ export function Card({
                   strokeWidth={1}
                 />
 
+                {/* the outer `room.humidity &&` guard already excludes
+                null/undefined, so the ?? fallback here is unreachable */}
                 {formatPercentage(
+                  /* v8 ignore next */
                   room.humidity ?? undefined,
                 )}
               </span>

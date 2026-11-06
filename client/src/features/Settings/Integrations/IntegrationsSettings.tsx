@@ -76,6 +76,9 @@ export function IntegrationsSettings() {
 
 
     async function handleSave(data: IntegrationInput) {
+        // unreachable: IntegrationForm disables its submit button from this same
+        // isSaving prop, so a second call can never observe isSaving already true
+        /* v8 ignore next */
         if (isSaving) return
 
         setIsSaving(true)
@@ -110,6 +113,9 @@ export function IntegrationsSettings() {
 
 
     async function handleDelete() {
+        // unreachable: ConfirmDialog only renders (and its Delete button is only
+        // enabled) while integrationToDelete is set and isSaving is false
+        /* v8 ignore next */
         if (!integrationToDelete || isSaving) return
 
         setIsSaving(true)
