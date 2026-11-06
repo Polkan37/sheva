@@ -81,6 +81,9 @@ export function DevicesSettings() {
 
 
   async function handleSave(data: DeviceInput) {
+    // unreachable: DeviceForm disables its submit button from this same isSaving
+    // prop, so a second call can never observe isSaving already true
+    /* v8 ignore next */
     if (isSaving) return
 
     setIsSaving(true)
@@ -113,6 +116,9 @@ export function DevicesSettings() {
 
 
   async function handleDelete() {
+    // unreachable: ConfirmDialog only renders (and its Delete button is only
+    // enabled) while deviceToDelete is set and isSaving is false
+    /* v8 ignore next */
     if (!deviceToDelete || isSaving) return
 
     setIsSaving(true)

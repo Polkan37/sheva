@@ -16,11 +16,17 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path aliases used by the tests/ tree (mirrors vitest.config.ts resolve.alias) */
+    "paths": {
+      "@/*": ["./src/*"],
+      "@tests/*": ["./tests/*"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

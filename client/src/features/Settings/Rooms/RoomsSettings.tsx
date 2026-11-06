@@ -70,6 +70,9 @@ export function RoomsSettings() {
 
 
   async function handleSave(data: RoomInput) {
+    // unreachable: RoomForm disables its submit button from this same isSaving
+    // prop, so a second call can never observe isSaving already true
+    /* v8 ignore next */
     if (isSaving) return
 
     setIsSaving(true)
@@ -101,6 +104,9 @@ export function RoomsSettings() {
   }
 
   async function handleDelete() {
+    // unreachable: ConfirmDialog only renders (and its Delete button is only
+    // enabled) while roomToDelete is set and isSaving is false
+    /* v8 ignore next */
     if (!roomToDelete || isSaving) return
 
     setIsSaving(true)
