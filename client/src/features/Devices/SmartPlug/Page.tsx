@@ -110,11 +110,6 @@ export function SmartPlugPage({ device }: Props) {
         ? getPowerStatistics(history)
         : null;
 
-    const rangeDuration = history
-        ? new Date(history.to).getTime() -
-        new Date(history.from).getTime()
-        : 0;
-
     return (
         <div className={styles.page}>
             <header className={styles.header}>
@@ -260,32 +255,7 @@ export function SmartPlugPage({ device }: Props) {
 
 
                         <h4>Total by category</h4>
-
-                        <div
-                            className={styles.timeline}
-                            role="img"
-                            aria-label="Power supply status distribution"
-                        >
-                            {(['online', 'offline', 'unknown'] as const).map((status) => {
-                                const duration = stats.duration[status];
-
-                                return (
-                                    <div
-                                        key={status}
-                                        className={`${styles.segment} ${styles[status]}`}
-                                        style={{
-                                            width: `${rangeDuration > 0
-                                                    ? (duration / rangeDuration) * 100
-                                                    : 0
-                                                }%`,
-                                        }}
-                                        title={`${labels[status]}: ${formatDuration(duration)} (${rangeDuration > 0
-                                            ? ((duration / rangeDuration) * 100).toFixed(1)
-                                            : 0}%)`}
-                                    />
-                                );
-                            })}
-                        </div>
+                        <PowerChart history={history} mode="distribution" />
 
                         <div className={styles.timelineDates}>
                             <span>{formatDate(history.from)}</span>

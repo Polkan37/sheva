@@ -9,7 +9,7 @@ import { integrationConfig } from './config'
 export const Integrations = memo(function Integrations() {
   const { integrations } = useIntegrations();
 
-  const integrationOrder = ['ukrhmc', 'yasno'];
+  const integrationOrder = ['yasno', 'ukrhmc'];
   const sortedIntegrations = [...integrations].sort(
     (a, b) =>
       integrationOrder.indexOf(a.uid) -

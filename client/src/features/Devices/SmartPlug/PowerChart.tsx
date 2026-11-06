@@ -8,12 +8,13 @@ import {
     TimeScale,
     Tooltip,
     type ChartOptions,
+    type TooltipPositionerFunction,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 
 import type { PowerHistory, PowerStatus } from '../../../shared/api/power';
-import { getPowerTimeline, formatDuration } from './powerUtils';
+import { getPowerTimeline, formatDuration, getPowerStatistics } from './powerUtils';
 
 import styles from './PowerChart.module.css';
 
@@ -24,6 +25,21 @@ ChartJS.register(
     TimeScale,
     Tooltip,
 );
+
+declare module 'chart.js' {
+    interface TooltipPositionerMap {
+        cursor: TooltipPositionerFunction<'bar'>;
+    }
+}
+
+Tooltip.positioners.cursor = function (_elements, eventPosition) {
+    return {
+        x: eventPosition.x,
+        y: eventPosition.y,
+        xAlign: 'center',
+        yAlign: 'bottom',
+    };
+};
 
 const COLORS: Record<PowerStatus, string> = {
     online: '#468b6a',
@@ -39,9 +55,10 @@ const LABELS: Record<PowerStatus, string> = {
 
 type Props = {
     history: PowerHistory;
+    mode?: 'timeline' | 'distribution';
 };
 
-export function PowerChart({ history }: Props) {
+export function PowerChart({ history, mode = 'timeline' }: Props) {
     const timeline = useMemo(
         () => getPowerTimeline(history),
         [history],
@@ -137,6 +154,74 @@ export function PowerChart({ history }: Props) {
         },
     };
 
+    if (mode === 'distribution') {
+        const stats = getPowerStatistics(history);
+        const total = toMs - fromMs;
+        const statuses: PowerStatus[] = ['online', 'offline', 'unknown'];
+
+        const distributionData = {
+            labels: ['Power supply'],
+            datasets: statuses.map((status) => ({
+                label: LABELS[status],
+                data: [
+                    total > 0
+                        ? (stats.duration[status] / total) * 100
+                        : 0,
+                ],
+                backgroundColor: COLORS[status],
+                borderWidth: 0,
+                barThickness: 24,
+                stack: 'power',
+            })),
+        };
+
+        const distributionOptions: ChartOptions<'bar'> = {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                x: {
+                    stacked: true,
+                    min: 0,
+                    max: 100,
+                    display: false,
+                },
+                y: {
+                    stacked: true,
+                    display: false,
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    position: 'cursor',
+                    caretPadding: 5,
+                    callbacks: {
+                        title: () => '',
+                        label: (context) => {
+                            const status = statuses[context.datasetIndex];
+                            if (!status) return '';
+
+                            return `${LABELS[status]}: ${formatDuration(
+                                stats.duration[status],
+                            )} (${context.parsed.x.toFixed(1)}%)`;
+                        },
+                    },
+                },
+            },
+        };
+
+        return (
+            <div className={styles.chart}>
+                <div className={`${styles.container} ${styles.distribution}`}>
+                    <Bar data={distributionData} options={distributionOptions} />
+                </div>
+            </div>
+        );
+    }
 
 
     return (

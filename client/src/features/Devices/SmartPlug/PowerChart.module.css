@@ -34,6 +34,9 @@
   flex-shrink: 0;
 }
 
+.container.distribution {
+    height: 100px;
+}
 
 @media (max-width: 600px) {
   .container {
