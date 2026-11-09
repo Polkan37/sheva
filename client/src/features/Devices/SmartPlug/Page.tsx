@@ -8,6 +8,7 @@ import {
     type PowerHistory,
     type PowerRange,
     type PowerStatus,
+    type PowerHistoryFilter,
 } from '../../../shared/api/power';
 import { usePowerState } from '../../../shared/hooks/usePowerState';
 import {
@@ -22,7 +23,13 @@ type Props = {
     device: Device;
 };
 
-const ranges: PowerRange[] = ['24h', '7d', '30d'];
+function toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
 
 const labels: Record<PowerStatus, string> = {
     online: 'Online',
@@ -43,7 +50,7 @@ function formatDate(value: string | null) {
 }
 
 export function SmartPlugPage({ device }: Props) {
-    const [range, setRange] = useState<PowerRange>('24h');
+    const [range, setRange] = useState<PowerRange | 'custom'>('24h');
     const [history, setHistory] = useState<PowerHistory | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -58,6 +65,38 @@ export function SmartPlugPage({ device }: Props) {
         : (state?.status ?? 'unknown');
 
     const StatusIcon = icons[status];
+    const [appliedPeriod, setAppliedPeriod] = useState<PowerHistoryFilter>('24h');
+
+    const [customFrom, setCustomFrom] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 6);
+        return toDateInputValue(date);
+    });
+
+    const [customTo, setCustomTo] = useState(() =>
+        toDateInputValue(new Date())
+    );
+
+    const today = toDateInputValue(new Date());
+
+    const isValidCustomRange =
+        Boolean(customFrom && customTo) &&
+        customFrom <= customTo &&
+        customTo <= today;
+
+    function applyCustomRange() {
+        if (!isValidCustomRange) return;
+
+        const from = new Date(`${customFrom}T00:00:00`);
+        const to = new Date(`${customTo}T00:00:00`);
+
+        to.setDate(to.getDate() + 1);
+
+        setAppliedPeriod({
+            from: from.toISOString(),
+            to: new Date(Math.min(to.getTime(), Date.now())).toISOString(),
+        });
+    }
 
     useEffect(() => {
         const controller = new AbortController();
@@ -66,7 +105,7 @@ export function SmartPlugPage({ device }: Props) {
             try {
                 const result = await getPowerHistory(
                     device.uid,
-                    range,
+                    appliedPeriod,
                     controller.signal,
                 );
 
@@ -103,7 +142,7 @@ export function SmartPlugPage({ device }: Props) {
             clearInterval(interval);
             controller.abort();
         };
-    }, [device.uid, range]);
+    }, [device.uid, appliedPeriod]);
 
 
     const stats = history
@@ -187,21 +226,62 @@ export function SmartPlugPage({ device }: Props) {
             <section className={styles.analyticsHeader}>
                 <h3>Power analytics</h3>
 
+
                 <div className={styles.ranges}>
-                    {ranges.map((item) => (
-                        <button
-                            type="button"
-                            key={item}
-                            onClick={() => setRange(item)}
-                            className={
-                                range === item ? styles.activeRange : ''
+                    <select
+                        aria-label="Power analytics period"
+                        className={styles.rangeSelect}
+                        value={range}
+                        onChange={(event) => {
+                            const value = event.target.value as PowerRange | 'custom';
+
+                            setRange(value);
+
+                            if (value !== 'custom') {
+                                setAppliedPeriod(value);
                             }
-                            aria-pressed={range === item}
-                        >
-                            {item}
-                        </button>
-                    ))}
+                        }}
+                    >
+                        <option value="24h">Last 24 hours</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="custom">Custom range</option>
+                    </select>
+
+                    {range === 'custom' && (
+                        <div className={styles.customRange}>
+                            <label>
+                                From
+                                <input
+                                    type="date"
+                                    value={customFrom}
+                                    max={customTo && customTo < today ? customTo : today}
+                                    onChange={(event) => setCustomFrom(event.target.value)}
+                                />
+                            </label>
+
+                            <label>
+                                To
+                                <input
+                                    type="date"
+                                    value={customTo}
+                                    min={customFrom || undefined}
+                                    max={today}
+                                    onChange={(event) => setCustomTo(event.target.value)}
+                                />
+                            </label>
+
+                            <button
+                                type="button"
+                                disabled={!isValidCustomRange}
+                                onClick={applyCustomRange}
+                            >
+                                Apply
+                            </button>
+                        </div>
+                    )}
                 </div>
+
             </section>
 
             {loading && !history && (

@@ -25,6 +25,10 @@ export type PowerHistory = {
   periods: PowerPeriod[];
 };
 
+export type PowerHistoryFilter =
+  | PowerRange
+  | { from: string; to: string };
+
 export function getPowerState(
   uid: string,
   signal?: AbortSignal,
@@ -35,13 +39,24 @@ export function getPowerState(
   );
 }
 
+
 export function getPowerHistory(
   uid: string,
-  range: PowerRange,
+  period: PowerHistoryFilter,
   signal?: AbortSignal,
 ): Promise<PowerHistory> {
+  const params = new URLSearchParams();
+
+  if (typeof period === 'string') {
+    params.set('range', period);
+  } else {
+    params.set('from', period.from);
+    params.set('to', period.to);
+  }
+
   return apiFetch<PowerHistory>(
-    `/api/devices/${encodeURIComponent(uid)}/power/history?range=${range}`,
+    `/api/devices/${encodeURIComponent(uid)}/power/history?${params}`,
     signal,
   );
 }
+

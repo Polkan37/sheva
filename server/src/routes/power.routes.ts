@@ -27,6 +27,8 @@ const Query = Type.Object({
       Type.Literal('30d'),
     ]),
   ),
+  from: Type.Optional(Type.String({ format: 'date-time' })),
+  to: Type.Optional(Type.String({ format: 'date-time' })),
 });
 
 const Status = Type.Union([
@@ -141,6 +143,7 @@ export const powerRoutes: FastifyPluginAsync = async (
         querystring: Query,
         response: {
           200: HistoryResponse,
+          400: ErrorResponse,
           404: ErrorResponse,
         },
       },
@@ -156,16 +159,39 @@ export const powerRoutes: FastifyPluginAsync = async (
       }
 
       const durations = {
-        '24h': 24 * 60 * 60 * 1000,
-        '7d': 7 * 24 * 60 * 60 * 1000,
-        '30d': 30 * 24 * 60 * 60 * 1000,
-      };
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+};
 
-      const range = request.query.range ?? '24h';
-      const to = new Date();
-      const from = new Date(
-        to.getTime() - durations[range],
-      );
+const { range, from: fromParam, to: toParam } = request.query;
+
+const hasCustom = fromParam !== undefined || toParam !== undefined;
+
+if (
+  (hasCustom && (range !== undefined || !fromParam || !toParam))
+) {
+  return reply.code(400).send({
+    error: 'Provide either range or both from and to.',
+  });
+}
+
+const to = hasCustom ? new Date(toParam!) : new Date();
+
+const from = hasCustom
+  ? new Date(fromParam!)
+  : new Date(to.getTime() - durations[range ?? '24h']);
+
+if (
+  !Number.isFinite(from.getTime()) ||
+  !Number.isFinite(to.getTime()) ||
+  from >= to ||
+  to.getTime() > Date.now()
+) {
+  return reply.code(400).send({
+    error: 'Invalid date range.',
+  });
+}
 
       const result = db
         .select()

@@ -699,8 +699,7 @@ export async function getYasnoIntegrationData(
     // Cached schedules are indicative, not confirmed.
     const times =
       status === 'ScheduleApplies' &&
-        schedule.today.source === 'live' &&
-        schedule.tomorrow.source === 'live'
+        schedule.today.source === 'live' 
         ? getNextOutageTimes(liveSchedule)
         : {
           nextShutdownTime: null,

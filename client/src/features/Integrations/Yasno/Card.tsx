@@ -28,7 +28,7 @@ export default function YasnoCard({ integration }: Props) {
         },
         {
             key: "PossibleShutdowns",
-            message: "Можливі відключення",   //не було такого статусу, але в графіках такі відмітки бували
+            message: "Можливі відключення",   
             description: getDescription(nextShutdownTime, nextRestoreTime),
             styleClass: styles.maybe
         },
