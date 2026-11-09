@@ -31,7 +31,7 @@ export type YasnoIntegration = {
   provider: string;
 
   status: string | null;
-
+  availability: 'ready' | 'degraded';
   nextShutdownTime: number | null;
   nextRestoreTime: number | null;
 
@@ -48,9 +48,25 @@ export type YasnoIntegration = {
   lastError: string | null;
 };
 
+
+export type IntegrationFailure = {
+  id: string;
+  uid: string;
+  name: string;
+  type: string;
+  description: string | null;
+  enabled: boolean;
+  status: string;
+  lastSyncAt: string | null;
+  lastError: string;
+  availability: 'error';
+};
+
+
 export type Integration =
   | YasnoIntegration
-  | WeatherIntegration;
+  | WeatherIntegration
+  | IntegrationFailure;
 
 export type IntegrationsResponse = {
   integrations: Integration[];
@@ -88,6 +104,7 @@ export type WeatherIntegration = {
   type: "weather";
   enabled: boolean;
 
+  availability: 'ready' | 'degraded';
   city: string;
   current: WeatherCurrent;
   forecast: WeatherForecastDay[];

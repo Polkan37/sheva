@@ -47,42 +47,55 @@ const IntegrationParamsSchema = Type.Object({
 export async function integrationsRoutes(app: FastifyInstance) {
     const api = app.withTypeProvider<TypeBoxTypeProvider>();
 
-    app.get("/api/integrations", async () => {
-        const rows = await db
+
+    app.get('/api/integrations', async () => {
+        const rows = db
             .select()
-            .from(integrations);
+            .from(integrations)
+            .all();
 
         const result = await Promise.all(
-            rows.map(async (integration) => {
-                if (!integration.enabled) return null;
+            rows
+                .filter(integration => integration.enabled)
+                .map(async (integration) => {
+                    try {
+                        const data = await getIntegrations(
+                            integration.type,
+                            integration.id,
+                        );
 
-                try {
-                    const specificData = await getIntegrations(
-                        integration.type,
-                        integration.id,
-                    );
+                        const lastError =
+                            'lastError' in data &&
+                                typeof data.lastError === 'string'
+                                ? data.lastError
+                                : null;
 
-                    return {
-                        ...integration,
-                        ...specificData,
-                    };
-                } catch (error) {
-                    app.log.error(
-                        { err: error, integration: integration.uid },
-                        "Integration failed",
-                    );
+                        return {
+                            ...integration,
+                            ...data,
+                            lastError,
+                            availability: lastError ? 'degraded' : 'ready',
+                        };
+                    } catch (error) {
+                        app.log.error(
+                            { err: error, integration: integration.uid },
+                            'Integration failed',
+                        );
 
-                    return null;
-                }
-            }),
+                        return {
+                            ...integration,
+                            availability: 'error',
+                            lastError: error instanceof Error
+                                ? error.message
+                                : 'Unknown integration error',
+                        };
+                    }
+                }),
         );
 
-        return {
-            integrations: result.filter(
-                (integration) => integration !== null,
-            ),
-        };
+        return { integrations: result };
     });
+
 
     api.post(
         '/api/integrations',
