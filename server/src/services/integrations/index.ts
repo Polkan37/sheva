@@ -10,8 +10,8 @@ type IntegrationHandler = {
 const integrationRegistry: IntegrationHandler[] = [
   {
     type: "power_outages",
-    handler: async (_integrationId) =>
-      getYasnoIntegrationData(),
+    handler: (integrationId) =>
+      getYasnoIntegrationData(integrationId),
   },
   {
     type: "weather",

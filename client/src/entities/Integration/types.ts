@@ -8,6 +8,8 @@ export interface YasnoScheduleDay {
   slots: YasnoScheduleSlot[];
   date: string;
   status: string;
+  source: 'live' | 'cached' | 'unavailable';
+  updatedAt: string | null;
 }
 
 export interface YasnoSchedule {

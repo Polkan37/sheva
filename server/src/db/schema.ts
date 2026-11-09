@@ -329,3 +329,44 @@ export const powerOutages = sqliteTable(
   ],
 );
 
+
+export const yasnoSchedules = sqliteTable(
+  'yasno_schedules',
+  {
+    id: integer('id')
+      .primaryKey({ autoIncrement: true }),
+
+    integrationId: text('integration_id')
+      .notNull()
+      .references(() => integrations.id, {
+        onDelete: 'cascade',
+      }),
+
+    group: text('group').notNull(),
+
+    date: text('date').notNull(),
+
+    slots: text('slots', { mode: 'json' })
+      .$type<Array<{
+        start: number;
+        end: number;
+        type: string;
+      }>>()
+      .notNull(),
+
+    status: text('status').notNull(),
+
+    updatedOn: text('updated_on'),
+
+    fetchedAt: integer('fetched_at', {
+      mode: 'timestamp_ms',
+    }).notNull(),
+  },
+  (table) => [
+    uniqueIndex('yasno_schedules_unique_idx').on(
+      table.integrationId,
+      table.group,
+      table.date,
+    ),
+  ],
+);

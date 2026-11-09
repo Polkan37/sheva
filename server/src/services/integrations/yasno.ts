@@ -1,3 +1,10 @@
+
+import {
+  getLatestScheduleGroup,
+  getSavedSchedule,
+  saveSchedule,
+} from './yasnoScheduleRepository.js';
+
 const API_BASE =
   "https://app.yasno.ua/api/blackout-service/public/shutdowns";
 
@@ -45,10 +52,17 @@ export interface YasnoSlot {
   type: YasnoSlotType;
 }
 
+export type ScheduleSource =
+  | 'live'
+  | 'cached'
+  | 'unavailable';
+
 export interface YasnoDaySchedule {
   slots: YasnoSlot[];
   date: string;
   status: YasnoStatus;
+  source?: ScheduleSource;
+  updatedAt?: string | null;
 }
 
 export interface YasnoGroupSchedule {
@@ -70,22 +84,21 @@ interface ResolvedAddress {
 
 export interface YasnoIntegrationData {
   group: string;
-
   provider: string;
-
   status: YasnoStatus | null;
 
   nextShutdownTime: number | null;
   nextRestoreTime: number | null;
 
   lastSyncAt: string | null;
+  lastError: string | null;
 
   schedule: YasnoGroupSchedule;
 
   address: {
     street: string;
     house: string;
-  };
+  } | null;
 }
 
 /*
@@ -510,79 +523,244 @@ function getNextOutageTimes(
   };
 }
 
+function getScheduleDates(now = new Date()) {
+  const today = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
 
-export async function getYasnoIntegrationData():
-  Promise<YasnoIntegrationData> {
+  const nextDate = new Date(`${today}T00:00:00Z`);
+  nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+  return {
+    today,
+    tomorrow: nextDate.toISOString().slice(0, 10),
+  };
+}
+
+
+function isValidDay(
+  day: YasnoDaySchedule | undefined,
+  expectedDate: string,
+): day is YasnoDaySchedule {
+  if (
+    !day ||
+    day.date.slice(0, 10) !== expectedDate ||
+    !Array.isArray(day.slots) ||
+    ['EmergencyShutdowns', 'WaitingForSchedule'].includes(
+      day.status,
+    )
+  ) {
+    return false;
+  }
+
+  if (day.status === 'NoOutages' || day.status === 'NoShutdowns') {
+    return day.slots.length === 0 ||
+      day.slots.every(slot => slot.type === 'NotPlanned');
+  }
+
+  return day.slots.length > 0 &&
+    day.slots.every(slot =>
+      Number.isFinite(slot.start) &&
+      Number.isFinite(slot.end) &&
+      slot.start >= 0 &&
+      slot.end <= 1440 &&
+      slot.start < slot.end &&
+      typeof slot.type === 'string'
+    );
+}
+
+
+function resolveDaySchedule(
+  integrationId: string,
+  group: string,
+  date: string,
+  liveDay?: YasnoDaySchedule,
+  updatedOn: string | null = null,
+): YasnoDaySchedule {
+  if (isValidDay(liveDay, date)) {
+    const normalizedDay = {
+      ...liveDay,
+      date,
+    };
+
+    saveSchedule({
+      integrationId,
+      group,
+      day: normalizedDay,
+      updatedOn,
+    });
+
+    return {
+      ...normalizedDay,
+      source: 'live',
+      updatedAt: updatedOn,
+    };
+  }
+
+  const cached = getSavedSchedule(
+    integrationId,
+    group,
+    date,
+  );
+
+  if (cached) {
+    return {
+      date,
+      slots: cached.slots,
+      status: cached.status,
+      source: 'cached',
+      updatedAt: cached.updatedOn ??
+        cached.fetchedAt.toISOString(),
+    };
+  }
+
+  return {
+    date,
+    slots: [],
+    status: 'WaitingForSchedule',
+    source: 'unavailable',
+    updatedAt: null,
+  };
+}
+
+function buildSchedule(
+  integrationId: string,
+  group: string,
+  dates: ReturnType<typeof getScheduleDates>,
+  liveSchedule?: YasnoGroupSchedule,
+): YasnoGroupSchedule {
+  const updatedOn = liveSchedule?.updatedOn ?? null;
+
+  return {
+    today: resolveDaySchedule(
+      integrationId,
+      group,
+      dates.today,
+      liveSchedule?.today,
+      updatedOn,
+    ),
+    tomorrow: resolveDaySchedule(
+      integrationId,
+      group,
+      dates.tomorrow,
+      liveSchedule?.tomorrow,
+      updatedOn,
+    ),
+    updatedOn: updatedOn ?? '',
+  };
+}
+
+
+
+export async function getYasnoIntegrationData(
+  integrationId: string,
+): Promise<YasnoIntegrationData> {
   const { regionId, dsoId } = getConfig();
+  const dates = getScheduleDates();
 
-  let address: ResolvedAddress;
+  let group: string | null = null;
+  let address: ResolvedAddress | null = null;
 
   try {
-    address =
-      await resolveAddress();
+    address = await resolveAddress();
 
-    const group =
-      await resolveGroup(
-        regionId,
-        dsoId,
-        address.streetId,
-        address.houseId,
-      );
+    group = await resolveGroup(
+      regionId,
+      dsoId,
+      address.streetId,
+      address.houseId,
+    );
 
-    const schedules =
-      await fetchSchedule(
-        regionId,
-        dsoId,
-      );
+    const schedules = await fetchSchedule(
+      regionId,
+      dsoId,
+    );
 
-    const schedule =
-      schedules[group];
+    const liveSchedule = schedules[group];
 
-    if (!schedule) {
+    if (!liveSchedule) {
       throw new Error(
         `No Yasno schedule found for group "${group}"`,
       );
     }
 
-    const {
-      nextShutdownTime,
-      nextRestoreTime,
-    } =
-      getNextOutageTimes(
-        schedule,
-      );
+    const schedule = buildSchedule(
+      integrationId,
+      group,
+      dates,
+      liveSchedule,
+    );
+
+    const status = liveSchedule.today?.status ?? null;
+
+    // Cached schedules are indicative, not confirmed.
+    const times =
+      status === 'ScheduleApplies' &&
+        schedule.today.source === 'live' &&
+        schedule.tomorrow.source === 'live'
+        ? getNextOutageTimes(schedule)
+        : {
+          nextShutdownTime: null,
+          nextRestoreTime: null,
+        };
 
     return {
       group,
-      provider: "ДТЕК",
-      status: schedule.today?.status ?? null,
-
-      nextShutdownTime,
-      nextRestoreTime,
-
-      lastSyncAt: schedule.updatedOn ?? null,
-
+      provider: 'ДТЕК',
+      status,
+      ...times,
+      lastSyncAt: liveSchedule.updatedOn ?? null,
+      lastError: null,
       schedule,
-
       address: {
         street: address.street,
         house: address.house,
       },
     };
   } catch (error) {
-    /*
-     * An address ID may become stale if Yasno
-     * changes its address registry.
-     *
-     * Clear cache so the next sync resolves
-     * streetId / houseId again.
-     */
-    resolvedAddressCache =
-      null;
+    resolvedAddressCache = null;
 
-    throw error;
+    const message = error instanceof Error
+      ? error.message
+      : 'Unknown Yasno API error';
+
+    group ??= getLatestScheduleGroup(
+      integrationId,
+      [dates.today, dates.tomorrow],
+    );
+
+    if (!group) {
+      throw error;
+    }
+
+    const schedule = buildSchedule(
+      integrationId,
+      group,
+      dates,
+    );
+
+    return {
+      group,
+      provider: 'ДТЕК',
+      status: 'unknown',
+      nextShutdownTime: null,
+      nextRestoreTime: null,
+      lastSyncAt: null,
+      lastError: message,
+      schedule,
+      address: address
+        ? {
+          street: address.street,
+          house: address.house,
+        }
+        : null,
+    };
   }
 }
+
 
 
 /*
