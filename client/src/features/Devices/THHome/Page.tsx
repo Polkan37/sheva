@@ -16,7 +16,8 @@ import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 import type { Device } from '../../../shared/api/devices';
 import { useMeasurements } from '../../../shared/hooks/useMeasurements';
-import { getDeviceAnalytics, type AnalyticsResponse, type AnalyticsRange } from '../../../shared/api/analytics';
+import { getDeviceAnalytics, type AnalyticsResponse, type AnalyticsRange, type AnalyticsPeriod } from '../../../shared/api/analytics';
+import { toDateInputValue } from '../../../shared/lib/format';
 
 import styles from './Page.module.css';
 
@@ -32,14 +33,6 @@ ChartJS.register(
 type THHomeContentProps = {
     device: Device;
 };
-
-const ranges: AnalyticsRange[] = [
-    '1h',
-    '6h',
-    '24h',
-    '7d',
-    '30d',
-];
 
 function formatValue(
     value: number | null,
@@ -60,43 +53,32 @@ function formatDate(value: string | null) {
     return new Date(value).toLocaleString();
 }
 
-type MetricChartProps = {
-    analytics: AnalyticsResponse;
-    metric: 'temperatureC' | 'humidityPct';
-    label: string;
-    unit: string;
-};
+function MetricChart({ analytics }: { analytics: AnalyticsResponse }) {
+    const getPoints = (metric: 'temperatureC' | 'humidityPct') =>
+        analytics.data.map((point) => ({
+            x: new Date(point.timestamp).getTime(),
+            y: point[metric].avg,
+        }));
 
-function MetricChart({
-    analytics,
-    metric,
-    label,
-    unit,
-}: MetricChartProps) {
-    const chartColor = metric === 'temperatureC' ? '#e6c98d' : '#9fc5d8';
-
-    const data: ChartData<'line'> = {
+    const data: ChartData<'line', { x: number; y: number | null }[]> = {
         datasets: [
             {
-                label,
-                data: analytics.data
-                    .filter(
-                        (point) =>
-                            point[metric].avg !== null,
-                    )
-                    .map((point) => ({
-                        x: new Date(
-                            point.timestamp,
-                        ).getTime(),
-
-                        y: point[metric].avg as number,
-                    })),
-                backgroundColor: 'rgba(223, 230, 216, 0.15)',
-
-                borderColor: chartColor,
-                pointBackgroundColor: chartColor,
-                pointBorderColor: chartColor,
-
+                label: 'Temperature',
+                data: getPoints('temperatureC'),
+                yAxisID: 'temperature',
+                borderColor: '#e6c98d',
+                backgroundColor: '#e6c98d',
+                tension: 0.25,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderWidth: 2,
+            },
+            {
+                label: 'Humidity',
+                data: getPoints('humidityPct'),
+                yAxisID: 'humidity',
+                borderColor: '#9fc5d8',
+                backgroundColor: '#9fc5d8',
                 tension: 0.25,
                 pointRadius: 0,
                 pointHoverRadius: 4,
@@ -108,29 +90,33 @@ function MetricChart({
     const options: ChartOptions<'line'> = {
         responsive: true,
         maintainAspectRatio: false,
-
         parsing: false,
-
         interaction: {
             mode: 'index',
             intersect: false,
         },
-
         plugins: {
             legend: {
-                display: false,
+                display: true,
+                labels: {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    usePointStyle: true,
+                },
             },
-
             tooltip: {
                 callbacks: {
                     label(context) {
                         const value = context.parsed.y;
-                        return value == null ? `${label}: —` : `${label}: ${value.toFixed(1)}${unit}`;
+                        const unit = context.dataset.yAxisID === 'temperature'
+                            ? '°C'
+                            : '%';
+
+                        return `${context.dataset.label}: ${value === null ? '—' : `${value.toFixed(1)}${unit}`
+                            }`;
                     },
                 },
             },
         },
-
         scales: {
             x: {
                 type: 'time',
@@ -140,46 +126,44 @@ function MetricChart({
                         hour: 'HH:mm',
                         day: 'dd.MM',
                     },
-
                     tooltipFormat: 'dd.MM.yyyy HH:mm',
                 },
-
                 grid: {
                     color: 'rgba(255, 255, 255, 0.06)',
                 },
-
-                border: {
-                    color: 'rgba(255, 255, 255, 0.15)',
-                },
-
                 ticks: {
                     color: 'rgba(255, 255, 255, 0.6)',
                     maxRotation: 0,
                 },
             },
-
-            y: {
+            temperature: {
+                type: 'linear',
+                position: 'left',
+                title: {
+                    display: true,
+                    text: '°C',
+                    color: '#e6c98d',
+                },
+                ticks: {
+                    color: '#e6c98d',
+                },
                 grid: {
                     color: 'rgba(255, 255, 255, 0.08)',
                 },
-
-                border: {
-                    color: 'rgba(255, 255, 255, 0.15)',
-                },
-
-                ticks: {
-                    color: 'rgba(255, 255, 255, 0.6)',
-                    stepSize: 0.1,
-
-                    callback(value) {
-                        return Number(value).toFixed(1);
-                    },
-                },
-
+            },
+            humidity: {
+                type: 'linear',
+                position: 'right',
                 title: {
                     display: true,
-                    text: unit,
-                    color: 'rgba(255, 255, 255, 0.55)',
+                    text: '%',
+                    color: '#9fc5d8',
+                },
+                ticks: {
+                    color: '#9fc5d8',
+                },
+                grid: {
+                    drawOnChartArea: false,
                 },
             },
         },
@@ -187,28 +171,58 @@ function MetricChart({
 
     return (
         <div className={styles.chart}>
-            <h3>{label}</h3>
-
+            <h3>Temperature & Humidity</h3>
             <div className={styles.chartContainer}>
-                <Line
-                    data={data}
-                    options={options}
-                />
+                <Line data={data} options={options} />
             </div>
         </div>
     );
 }
 
+
 export function THHomePage({
     device,
 }: THHomeContentProps) {
-    const [range, setRange] = useState<AnalyticsRange>('24h');
+    const [range, setRange] = useState<AnalyticsRange | 'custom'>('24h');
+    const [appliedPeriod, setAppliedPeriod] = useState<AnalyticsPeriod>('24h');
     const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { measurement, loading } = useMeasurements(device.uid);
     const batteryPercent = measurement?.batteryPct ?? null;
     const isLowBattery = batteryPercent !== null && batteryPercent <= 17;
+
+    const [customFrom, setCustomFrom] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 6);
+        return toDateInputValue(date);
+    });
+
+    const [customTo, setCustomTo] = useState(() =>
+        toDateInputValue(new Date())
+    );
+
+    const today = toDateInputValue(new Date());
+
+    const isValidCustomRange =
+        Boolean(customFrom && customTo) &&
+        customFrom <= customTo &&
+        customTo <= today;
+
+    function applyCustomRange() {
+        if (!isValidCustomRange) return;
+
+        const from = new Date(`${customFrom}T00:00:00`);
+        const to = new Date(`${customTo}T00:00:00`);
+
+        // Include the entire last selected day.
+        to.setDate(to.getDate() + 1);
+
+        setAppliedPeriod({
+            from: from.toISOString(),
+            to: new Date(Math.min(to.getTime(), Date.now())).toISOString(),
+        });
+    }
 
     useEffect(() => {
         let cancelled = false;
@@ -221,7 +235,7 @@ export function THHomePage({
                 const result =
                     await getDeviceAnalytics(
                         device.uid,
-                        range,
+                        appliedPeriod,
                     );
 
                 if (!cancelled) {
@@ -247,7 +261,7 @@ export function THHomePage({
         return () => {
             cancelled = true;
         };
-    }, [device.uid, range]);
+    }, [device.uid, appliedPeriod]);
 
     return (
         <div className={styles.page}>
@@ -356,24 +370,68 @@ export function THHomePage({
             <section className={styles.analyticsHeader}>
                 <h3>Analytics</h3>
 
+
                 <div className={styles.ranges}>
-                    {ranges.map((item) => (
-                        <button
-                            key={item}
-                            type="button"
-                            onClick={() =>
-                                setRange(item)
+                    <select
+                        aria-label="Analytics period"
+                        className={styles.rangeSelect}
+                        value={range}
+                        onChange={(event) => {
+                            const value = event.target.value as AnalyticsRange | 'custom';
+
+                            setRange(value);
+
+                            if (value !== 'custom') {
+                                setAppliedPeriod(value);
                             }
-                            className={
-                                range === item
-                                    ? styles.activeRange
-                                    : undefined
-                            }
-                        >
-                            {item}
-                        </button>
-                    ))}
+                        }}
+                    >
+                        <option value="1h">Last hour</option>
+                        <option value="6h">Last 6 hours</option>
+                        <option value="24h">Last 24 hours</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="custom">Custom range</option>
+                    </select>
+
+                    {range === 'custom' && (
+                        <div className={styles.customRange}>
+                            <label>
+                                From
+                                <input
+                                    type="date"
+                                    value={customFrom}
+                                    max={customTo || today}
+                                    onChange={(event) =>
+                                        setCustomFrom(event.target.value)
+                                    }
+                                />
+                            </label>
+
+                            <label>
+                                To
+                                <input
+                                    type="date"
+                                    value={customTo}
+                                    min={customFrom || undefined}
+                                    max={today}
+                                    onChange={(event) =>
+                                        setCustomTo(event.target.value)
+                                    }
+                                />
+                            </label>
+
+                            <button
+                                type="button"
+                                disabled={!isValidCustomRange}
+                                onClick={applyCustomRange}
+                            >
+                                Apply
+                            </button>
+                        </div>
+                    )}
                 </div>
+
             </section>
 
             {isLoading && (
@@ -386,136 +444,114 @@ export function THHomePage({
                 </p>
             )}
 
-            {!isLoading &&
-                !error &&
-                analytics && (
-                    <>
-                        <section
+            { analytics && (
+                <>
+                    <section
+                        className={
+                            styles.statistics
+                        }
+                    >
+                        <article
                             className={
-                                styles.statistics
+                                styles.statCard
                             }
                         >
-                            <article
-                                className={
-                                    styles.statCard
-                                }
-                            >
-                                <span>
-                                    Average Temperature
-                                </span>
+                            <span>
+                                Average Temperature
+                            </span>
 
-                                <strong>
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .temperatureC
-                                            .avg,
-                                    )}
-                                    °C
-                                </strong>
+                            <strong>
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .temperatureC
+                                        .avg,
+                                )}
+                                °C
+                            </strong>
 
-                                <small>
-                                    Min{' '}
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .temperatureC
-                                            .min,
-                                    )}
-                                    ° · Max{' '}
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .temperatureC
-                                            .max,
-                                    )}
-                                    °
-                                </small>
-                            </article>
+                            <small>
+                                Min{' '}
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .temperatureC
+                                        .min,
+                                )}
+                                ° · Max{' '}
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .temperatureC
+                                        .max,
+                                )}
+                                °
+                            </small>
+                        </article>
 
-                            <article
-                                className={
-                                    styles.statCard
-                                }
-                            >
-                                <span>
-                                    Average Humidity
-                                </span>
+                        <article
+                            className={
+                                styles.statCard
+                            }
+                        >
+                            <span>
+                                Average Humidity
+                            </span>
 
-                                <strong>
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .humidityPct
-                                            .avg,
-                                    )}
-                                    %
-                                </strong>
+                            <strong>
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .humidityPct
+                                        .avg,
+                                )}
+                                %
+                            </strong>
 
-                                <small>
-                                    Min{' '}
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .humidityPct
-                                            .min,
-                                    )}
-                                    % · Max{' '}
-                                    {formatValue(
-                                        analytics
-                                            .summary
-                                            .humidityPct
-                                            .max,
-                                    )}
-                                    %
-                                </small>
-                            </article>
+                            <small>
+                                Min{' '}
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .humidityPct
+                                        .min,
+                                )}
+                                % · Max{' '}
+                                {formatValue(
+                                    analytics
+                                        .summary
+                                        .humidityPct
+                                        .max,
+                                )}
+                                %
+                            </small>
+                        </article>
+                    </section>
+
+                    {analytics.data.length >
+                        0 ? (
+                        <section className={styles.charts}>
+                            <MetricChart analytics={analytics} />
                         </section>
+                    ) : (
+                        <p>
+                            No measurements for
+                            this period.
+                        </p>
+                    )}
 
-                        {analytics.data.length >
-                            0 ? (
-                            <section
-                                className={
-                                    styles.charts
-                                }
-                            >
-                                <MetricChart
-                                    analytics={
-                                        analytics
-                                    }
-                                    metric="temperatureC"
-                                    label="Temperature"
-                                    unit="°C"
-                                />
-
-                                <MetricChart
-                                    analytics={
-                                        analytics
-                                    }
-                                    metric="humidityPct"
-                                    label="Humidity"
-                                    unit="%"
-                                />
-                            </section>
-                        ) : (
-                            <p>
-                                No measurements for
-                                this period.
-                            </p>
-                        )}
-
-                        <footer
-                            className={
-                                styles.analyticsMeta
-                            }
-                        >
-                            {analytics.returnedPoints}{' '}
-                            points · approximately{' '}
-                            {analytics.resolutionSec}s
-                            per point
-                        </footer>
-                    </>
-                )}
+                    <footer
+                        className={
+                            styles.analyticsMeta
+                        }
+                    >
+                        {analytics.returnedPoints}{' '}
+                        points · approximately{' '}
+                        {analytics.resolutionSec}s
+                        per point
+                    </footer>
+                </>
+            )}
         </div>
     );
 }

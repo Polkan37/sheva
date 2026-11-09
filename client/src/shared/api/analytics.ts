@@ -48,18 +48,28 @@ export type AnalyticsResponse = {
     data: AnalyticsPoint[];
 };
 
+export type AnalyticsPeriod =
+    | AnalyticsRange
+    | { from: string; to: string };
+
 export async function getDeviceAnalytics(
     uid: string,
-    range: AnalyticsRange,
+    period: AnalyticsPeriod,
     points = 200,
 ): Promise<AnalyticsResponse> {
     const params = new URLSearchParams({
-        range,
         points: String(points),
     });
 
+    if (typeof period === 'string') {
+        params.set('range', period);
+    } else {
+        params.set('from', period.from);
+        params.set('to', period.to);
+    }
+
     const response = await fetch(
-        `/api/devices/${uid}/analytics?${params}`,
+        `/api/devices/${encodeURIComponent(uid)}/analytics?${params}`,
     );
 
     if (!response.ok) {
