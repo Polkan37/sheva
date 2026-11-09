@@ -701,7 +701,7 @@ export async function getYasnoIntegrationData(
       status === 'ScheduleApplies' &&
         schedule.today.source === 'live' &&
         schedule.tomorrow.source === 'live'
-        ? getNextOutageTimes(schedule)
+        ? getNextOutageTimes(liveSchedule)
         : {
           nextShutdownTime: null,
           nextRestoreTime: null,
